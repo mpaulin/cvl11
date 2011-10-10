@@ -23,3 +23,15 @@ PIXHAWK_LINK_LIBRARIES(example-process-image
   mavconn_shm
   lcm
 )
+
+PIXHAWK_EXECUTABLE(funkyprocessing funkyprocessing.cc)
+PIXHAWK_LINK_LIBRARIES(funkyprocessing
+  ${GLIB2_LIBRARY}
+  ${GTHREAD2_LIBRARY}
+  ${OPENCV_CORE_LIBRARY_OPTIMIZED}
+  ${OPENCV_IMGPROC_LIBRARY_OPTIMIZED}
+  ${OPENCV_HIGHGUI_LIBRARY_OPTIMIZED}
+  mavconn_lcm
+  mavconn_shm
+  lcm
+)
