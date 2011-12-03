@@ -1,12 +1,17 @@
 #ifndef __BLOB_DETECTION_HPP
 #define __BLOB_DETECTION_HPP
 
-#include <config.hpp>
-
+#include "config.hpp"
+#include "pixelDisjointSet.hpp"
 
 class blobDetectionParameters{
-  int minBlobSize = 2;
-  int maxBlobSize =100;
+  int minBlobSize;
+  int maxBlobSize;
+
+  blobDetectionParameters(){
+    minBlobSize = 1;
+    maxBlobSize = 20;
+  }
 };
 
 map<int,vector<Point2i> > cluster(const Mat& image);
