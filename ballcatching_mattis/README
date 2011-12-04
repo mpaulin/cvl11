@@ -1,1 +1,93 @@
-Mattis Paulin
+##################################################
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
+#!               Ball Catching                  !#
+#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#
+##################################################
+
+(or avoiding, not yet decided)
+
+Author : Mattis Paulin
+
+#################
+I) Introduction #
+#################
+
+This programs aims at a detecting the presence and 
+coordinates of a ball in a noisy environment, to 
+allow for a mobile air device to catch or avoid it. 
+
+The algorithm has the following structure:
+
+.----------------------.
+| Foreground Detection |
+`----------------------'
+          ||
+          \/
+.----------------------.
+|   Blob  Detection    |
+`----------------------'
+          ||
+          \/
+.----------------------.
+|     Blob Tracking    |
+`----------------------'
+          ||
+          \/
+.----------------------.
+| Trajectory Filtering |
+`----------------------'
+          ||
+          \/
+.----------------------.
+| Ball Motion Detection|
+`----------------------'
+
+####################
+II) Detailed steps #
+####################
+
+________________________
+                        |        
+1. Foreground Detection |
+________________________|
+
+Direcly used from OpenCV's FGDetector. Uses Mixture of 
+Gaussians to get the foreground mask.
+
+
+__________________
+                  |        
+2. Blob Detection |
+__________________|
+
+source: blobDetection.cpp
+dependency: pixelDisjointSet.cpp
+
+Uses a Disjoint Set structure to cluster connected components
+of the foreground mask.
+
+A minimum enclosing circle then detects blobs.
+Too small or too large blobs are discarded.
+
+
+__________________
+                  |        
+3. Blob Tracking  |
+__________________|
+
+source: blobFiltering.cpp
+
+Uses a combination of comparison of speed, radius and color 
+histogram correlation to determine the best next blob for a 
+trajectory. 
+
+A lot of parameters to hand-tune...
+
+
+_________________________
+                         |        
+4. Trajectory Filtering  |
+_________________________|
+
+
+TODO
