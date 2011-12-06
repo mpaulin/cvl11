@@ -27,6 +27,21 @@ void renderLine(Mat& image, const Mat& P,const Point3d& X1,const Point3d& X2, co
   line(image,pp1,pp2,col);
 }
 
+pair<double,double> linearRegression(const vector<Point2d>& points){
+  Mat A(points.size(),2,CV_64F);
+  Mat B(points.size(),1,CV_64F);
+  for(unsigned int i = 0;i<points.size();i++){
+    A.at<double>(i,0)= points[i].x;
+    A.at<double>(i,1)= 1;
+    B.at<double>(i,0)=points[i].y;
+  }
+  Mat X = A.inv(DECOMP_SVD)*B;
+  double a = X.at<double>(0,0);
+  double b = X.at<double>(1,0);
+
+  return pair<double,double>(a,b);
+}
+
 //Class describing planes that contain the Z axis.
 class Plane{
 
@@ -102,20 +117,20 @@ public:
   double a;
   double b;
   double c;
-  Plane p;
+  Plane plane;
 
   Parabola(){}
 
   Parabola(const vector<Point3d>& points,int method ){
     //method :  0 -> with positions only 1 -> with positions and speeds
     this->points = points;
-    p = Plane(points);
+    plane = Plane(points);
 
     if(method ==0){
       Mat A(points.size(),3,CV_64F);
       Mat B(points.size(),1,CV_64F);
       for(unsigned int i = 0;i<points.size();i++){
-	Point2d x = p.project(points[i]);
+	Point2d x = plane.project(points[i]);
 	A.at<double>(i,0) = x.x*x.x;
 	A.at<double>(i,1) = x.x;
 	A.at<double>(i,2) = 1; 
@@ -131,7 +146,7 @@ public:
       Mat A(2*points.size()-1,4,CV_64F);
       Mat B(2*points.size()-1,1,CV_64F);
       for(unsigned int i = 0;i<points.size();i++){
-	Point2d x = p.project(points[i]);
+	Point2d x = plane.project(points[i]);
 	A.at<double>(i,0) = x.x*x.x;
 	A.at<double>(i,1) = x.x;
 	A.at<double>(i,2) = 1; 
@@ -142,14 +157,39 @@ public:
 	  A.at<double>(points.size()+i-1,1) = 0;
 	  A.at<double>(points.size()+i-1,2) = 0;
 	  A.at<double>(points.size()+i-1,3) = 1;
-	  B.at<double>(points.size()+i-1,0) = x.y-p.project(points[i-1]).y;
+	  B.at<double>(points.size()+i-1,0) = x.y-plane.project(points[i-1]).y;
 	}
       }
       Mat X = A.inv(DECOMP_SVD)*B;
       a = X.at<double>(0,0);
       b = X.at<double>(1,0);
       c = X.at<double>(2,0);
+
+      cout << "Parabola found for 1: " << a << " " << b << " " << c << endl;
     }  
+    else if(method == 2){
+      double g=0.0085;
+      //Evalute Vx0
+      vector<Point2d> vx(points.size());
+      for(unsigned int i = 0;i<vx.size();i++){
+	vx[i].x = i;
+	vx[i].y =  plane.project(points[i]).x;
+      }
+      double v0x = linearRegression(vx).first;
+      cout << "Vx0 found : " << v0x << endl;
+      vector<Point2d> pts(points.size());
+      for(unsigned int i = 0;i<pts.size();i++){
+	Point2d p = plane.project(points[i]);
+	pts[i].x = p.x;
+	pts[i].y = p.y - g*p.x*p.x/v0x;
+      }
+      pair<double,double> bc = linearRegression(pts);
+
+      a = g/v0x;
+      b = bc.first;
+      c = bc.second;
+      cout << "Parabola found for 2: " << a << " " << b << " " << c << endl;
+    }
   }
 
   double eval(double x){
@@ -157,16 +197,16 @@ public:
   }
 
   void render(Mat& image, const Mat& P,const Scalar& col){
-    p.render(image,P);
+    plane.render(image,P);
     double steps = 100;
-    double beg = p.project(points[0]).x;
+    double beg = plane.project(points[0]).x;
     double nb = 5;
     for(int i = 0;i<steps;i++){
       double x = beg-nb*i/steps;
       Point2d po(x,eval(x));
-      Point3d X = p.retroProject(po);
+      Point3d X = plane.retroProject(po);
       
-      renderPoint(image,P,X,Scalar(0,255,255)); 
+      renderPoint(image,P,X,col); 
     }
 
     for(vector<Point3d>::const_iterator it = points.begin();it!=points.end();it++){
@@ -308,10 +348,6 @@ int main(int argc, char** argv)
       Point3d X = triangulate(P1,P2,x1,x2);
 
       tracks.push_back(X);
-      if(i>1){
-	//cout << "Speed " << X.z-tracks[tracks.size()-2].z << endl;
-	cout << "Mean Momentum " << ((X.z - tracks[tracks.size()-2].z) - (tracks[1].z-tracks[0].z))/(tracks.size()-1) << endl;
-      }
 
       Mat Xh(4,1,CV_64F);
       Xh.at<double>(0,0) = X.x;
@@ -326,10 +362,11 @@ int main(int argc, char** argv)
       circle(frame2,Point2d(rep2.at<double>(0,0)/rep2.at<double>(2,0),rep2.at<double>(1,0)/rep2.at<double>(2,0)),2,Scalar(0,255,0),-1);
 
       if(tracks.size()>10){
-	Parabola p(tracks,0);
-	p.render(frame,P1,Scalar(0,255,255));
-	Parabola p2(tracks,1);
-	p2.render(frame,P1,Scalar(0,0,255));
+	Parabola p1(tracks,1);
+	p1.render(frame,P1,Scalar(0,255,255));
+	Parabola p(tracks,2);
+	p.render(frame,P1,Scalar(255,0,0));
+	p.render(frame2,P2,Scalar(255,0,0)); 
       }
     }
     //std::cout << "Found " << tracker1->GetBlobNum() << " and " << tracker2->GetBlobNum() << " Blobs in images." << std::endl;
