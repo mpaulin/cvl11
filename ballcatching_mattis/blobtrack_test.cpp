@@ -192,15 +192,7 @@ double p2[3][4] = {{-0.5845,    0.5768,   -0.0002,    2.3055},
    Creates a blob tracker with fixed parameters
  */
 CvBlobTrackerAuto* createTracker(){
-  CvGaussBGStatModelParams* FGparams = new CvGaussBGStatModelParams;		     
-  FGparams->win_size=200;	
-  FGparams->n_gauss=5;
-  FGparams->bg_threshold=0.7;
-  FGparams->std_threshold=2.5;
-  FGparams->minArea=15.f;
-  FGparams->weight_init=0.05;
-  FGparams->variance_init=30; 
-  CvFGDetector* FGDetector = cvCreateFGDetectorBase(CV_BG_MODEL_MOG,FGparams);
+  CvFGDetector* FGDetector = cvCreateFGDetectorBase(CV_BG_MODEL_MOG,NULL);
   CvBlobDetector* blobDetector = cvCreateBlobDetectorCC();
   CvBlobTracker* blobTracker = cvCreateBlobTrackerCC();
   CvBlobTrackPostProc* postProc = cvCreateModuleBlobTrackPostProcKalman();

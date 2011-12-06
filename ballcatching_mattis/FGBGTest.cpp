@@ -1,6 +1,7 @@
 #include "config.hpp"
 #include "blobDetection.hpp"
 #include "blobTracking.hpp"
+#include "trajectoryFiltering.hpp"
 #include <time.h>
 
 double thresh = 150; 
@@ -50,7 +51,7 @@ int main(int argc, char** argv){
 
    
     
-    int initFrames = 42;
+    int initFrames = 30;
     if(i<initFrames){
       trajectories = initTrajectories(blobs,frame);
     }
@@ -61,9 +62,9 @@ int main(int argc, char** argv){
       }
       
       updateTrajectories(trajectories,stampedBlobs,frame);
+      filterTrajectories(trajectories,i);
      
-     
-      cout <<"Trajectory size : " <<  trajectories.trajectories.size() << " First trajectory size " << trajectories.trajectories[0].size() << endl;
+      cout <<"Trajectory size : " <<  trajectories.trajectories.size() << endl;
     } 
    
   
@@ -82,7 +83,7 @@ int main(int argc, char** argv){
     imshow("Image",frame);
 
 
-    if(waitKey(40) >= 0) break;
+    if(waitKey(500) >= 0) break;
   }
   return 0;
 }

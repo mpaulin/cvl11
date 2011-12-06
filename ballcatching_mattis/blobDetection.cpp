@@ -41,8 +41,8 @@ Mat clustersToImage(const map<int,vector<Point2i> >& clusters, int width,int hei
     for(vector<Point2i>::const_iterator it2 = it->second.begin(); it2!=it->second.end();it2++){
       clusteredImage.at<unsigned char>(it2->y,it2->x) = (73153413*it->first)%(255);
     }
-  }
-  cout << "done" << endl;
+  } 
+  cout << "Found " << clusters.size() << " connected components." << endl;
   return clusteredImage;
 }
 
@@ -73,26 +73,26 @@ vector<Point2i> getCenters(const vector<Mat>& clusters){
     }
     x/=m.cols;
     y/=m.cols;
-    centers.push_back(Point2i(x,y));
+    centers.push_back(Point2i(x,y)); 
   }
   return centers;
 }
 
-vector<Ellipse> getBlobs(const map<int,vector<Point2i> >& clusters){
+vector<Ellipse> getBlobs(const map<int,vector<Point2i> >& clusters,BlobDetectionParameters p){
   vector<Ellipse> blobs;
   for(map<int,vector<Point2i> >::const_iterator it = clusters.begin();it != clusters.end();it++){
     float radius;
     Point2f center;
     minEnclosingCircle(it->second,center,radius);
-    if(radius>1 && radius < 20){
+    if(radius>p.minBlobSize && radius < p.maxBlobSize){
       blobs.push_back(Ellipse(center,radius,radius,0));
-    }
+    } 
   }
   return blobs;
 }
 
 
-vector<Ellipse> getBlobs(const Mat& image){
+vector<Ellipse> getBlobs(const Mat& image,BlobDetectionParameters p){
   map<int,vector<Point2i> > clusters = cluster(image);
   return getBlobs(clusters);
 }

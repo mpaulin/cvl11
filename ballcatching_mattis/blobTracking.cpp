@@ -101,17 +101,20 @@ void updateTrajectories(Trajectories& olds,
     newHistos[i] = getHistogram(blobs[i].first,image,p.nBins);
   }
 
-  for(unsigned int i = 0;i<olds.trajectories.size();i++){ 
+  list<vector<double> >::iterator itH = olds.lastHistograms.begin();
+  for(list<vector<pair<Ellipse,int> > >::iterator it = olds.trajectories.begin();
+      it!=olds.trajectories.end();
+      it++){
     double maxConfidence = 0;
     int index = 0;
     for(unsigned int j = 0;j<blobs.size();j++){
       pair<Ellipse,int>* le = NULL;
-      if(olds.trajectories[i].size()>0) le = &olds.trajectories[i][olds.trajectories[i].size()-2];
+      if(it->size()>0) le = &(*it)[it->size()-2];
       double confidence = evalConfidence(blobs[j],
-					 olds.trajectories[i][olds.trajectories[i].size()-1],
+					 (*it)[it->size()-1],
 					 le,
 					 newHistos[j],
-					 olds.lastHistograms[i],
+					 *itH,
 					 image,
 					 p);
       cout << "confidence : " << confidence<< endl;
@@ -121,28 +124,29 @@ void updateTrajectories(Trajectories& olds,
       }
     }
     if(maxConfidence>p.minConfidence){
-      olds.trajectories[i].push_back(blobs[index]);
+      it->push_back(blobs[index]);
       for(int k = 0;k<p.nBins;k++){
-	olds.lastHistograms[i][k] = newHistos[index][k];
+	(*itH)[k] = newHistos[index][k];
       }
     }
   } 
+  itH++;
 }
 
 Trajectories initTrajectories(const vector<Ellipse>& blobs,const Mat& image,const BlobTrackingParameters& p){
-  Trajectories trajectories(blobs.size());
+  Trajectories trajectories;
   for(unsigned int i = 0; i<blobs.size(); i++){
-    trajectories.trajectories[i].push_back(pair<Ellipse,int>(blobs[i],0));
-    trajectories.lastHistograms[i] = getHistogram(blobs[i],image,p.nBins);
+    trajectories.trajectories.push_back(vector<pair<Ellipse,int> >(1,pair<Ellipse,int>(blobs[i],0)));
+    trajectories.lastHistograms.push_back(getHistogram(blobs[i],image,p.nBins));
   }
   return trajectories;
 }
 
 void renderTrajectories(const Trajectories& trajectories,Mat& image){
-  for(unsigned int i = 0;i<trajectories.trajectories.size();i++){
-    for(unsigned int j = 0;j<trajectories.trajectories[i].size()-1;j++){
-      Point2d p1 = trajectories.trajectories[i][j].first.center;
-      Point2d p2 = trajectories.trajectories[i][j+1].first.center;
+  for(list<vector<pair<Ellipse,int> > >::const_iterator it = trajectories.trajectories.begin();it!=trajectories.trajectories.end();it++){
+    for(unsigned int j = 0;j<it->size()-1;j++){
+      Point2d p1 = (*it)[j].first.center;
+      Point2d p2 = (*it)[j+1].first.center;
       
       //cout << "Distance : " << sqrt((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)) << endl;
       line(image,p1,p2,Scalar(0,0,255));
