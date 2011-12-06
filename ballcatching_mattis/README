@@ -20,27 +20,31 @@ The algorithm has the following structure:
 
 .----------------------.
 | Foreground Detection |
-`----------------------'
+'----------------------'
           ||
           \/
 .----------------------.
 |   Blob  Detection    |
-`----------------------'
+'----------------------'
           ||
           \/
-.----------------------.
-|     Blob Tracking    |
-`----------------------'
+.----------------------.____
+|     Blob Tracking    |__< |
+'----------------------'  | |
+          ||              | |
+          \/              |^|
+.----------------------.  | |
+| Trajectory Filtering |  | |
+'----------------------'  |^|
+          ||              | |
+          \/              | |
+.----------------------.__|^|
+| Ball Motion Detection|____|
+'----------------------'
           ||
-          \/
-.----------------------.
-| Trajectory Filtering |
-`----------------------'
-          ||
-          \/
-.----------------------.
-| Ball Motion Detection|
-`----------------------'
+	  \/
+Hopefully, only one good
+     trajectory
 
 ####################
 II) Detailed steps #
@@ -75,7 +79,7 @@ __________________
 3. Blob Tracking  |
 __________________|
 
-source: blobFiltering.cpp
+source: blobTracking.cpp
 
 Uses a combination of comparison of speed, radius and color 
 histogram correlation to determine the best next blob for a 
@@ -90,4 +94,20 @@ _________________________
 _________________________|
 
 
-TODO
+source: trajectoryFiltering.cpp 
+
+Remove trajectories that don't move enough, or that have 
+been stopped.
+
+
+__________________________
+                          |
+5. Ball Motion Estimation |
+__________________________|
+
+source: motionFiltering.cpp
+
+Does the following:
+     - Match blobs in stereo images
+     - Find the best fitting parabola
+     - Discard trajectories that don't fit it.
