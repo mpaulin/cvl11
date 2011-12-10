@@ -37,29 +37,15 @@ public:
   }
 }; 
 
-class Trajectories{
-public:
-  vector<vector<pair<Ellipse,int> > > trajectories;
-  vector<vector<double> > lastHistograms;
-  Trajectories(){}
 
-  Trajectories(int n){
-    trajectories =  vector<vector<pair<Ellipse,int> > >(n);
-    lastHistograms = vector<vector<double> >(n);
-  }
-};
 
-void updateTrajectories(Trajectories& olds, 
-			const vector<pair<Ellipse,int> >& blobs,
+void updateTrajectories(list<Balls::Trajectory>& trajs,
+			const vector<double>& times,
+			const vector<Ellipse> & blobs,
+			double time,
 			const Mat& image,
 			const BlobTrackingParameters& p = 
 	 		BlobTrackingParameters());
 
-Trajectories initTrajectories(const vector<Ellipse>& blobs,
-			      const Mat& image, 
-			      const BlobTrackingParameters& p
-			      = BlobTrackingParameters());
-
-void renderTrajectories(const Trajectories& trajectories,Mat& image);
 
 #endif

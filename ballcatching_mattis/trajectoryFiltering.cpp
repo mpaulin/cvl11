@@ -1,20 +1,20 @@
 #include "trajectoryFiltering.hpp"
 
-
-
-void filterTrajectories(Trajectories& trajectories,
-			int time,
+void filterTrajectories(list<Balls::Trajectory>& trajectories,
+			const vector<double>& times,
+			int frame,
 			const TrajectoryFilteringParameters& p){
   
-  vector<list<vector<pair<Ellipse,int> > >::iterator> toRemove;
-  for(list<vector<pair<Ellipse,int> > >::iterator it = trajectories.trajectories.begin();
-      it!=trajectories.trajectories.end();it++){
-    if(time-(*it)[it->size()-1].second > p.loosingFrames){
+  vector<list<Balls::Trajectory>::iterator> toRemove;
+  for(list<Balls::Trajectory>::iterator it = trajectories.begin();
+      it!=trajectories.end();
+      ++it){
+    if(times[frame]-times[it->getFrame(it->length-1)] > p.loosingFrames){
       toRemove.push_back(it);
     }
   }
-  for(vector<list<vector<pair<Ellipse,int> > >::iterator>::const_iterator it = toRemove.begin();
+  for(vector<list<Balls::Trajectory>::iterator>::const_iterator it = toRemove.begin();
       it!=toRemove.end(); ++it){
-    trajectories.trajectories.erase(*it);
+    trajectories.erase(*it);
   }
 }

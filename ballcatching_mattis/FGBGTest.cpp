@@ -28,7 +28,7 @@ int main(int argc, char** argv){
   VideoCapture cap;
   cap.open(string(argv[1]));
   if(!cap.isOpened()) return -1;
-  Trajectories trajectories;
+  //Trajectories trajectories;
   for(int i = 0;i<2000;i++){
     cout << "Read image " << i << endl;
     Mat frame;
@@ -50,7 +50,7 @@ int main(int argc, char** argv){
 
 
    
-    
+    /*
     int initFrames = 30;
     if(i<initFrames){
       trajectories = initTrajectories(blobs,frame);
@@ -61,12 +61,12 @@ int main(int argc, char** argv){
 	stampedBlobs.push_back(pair<Ellipse,int>(*it,i));
       }
       
-      updateTrajectories(trajectories,stampedBlobs,frame);
-      filterTrajectories(trajectories,i);
+      //updateTrajectories(trajectories,stampedBlobs,frame);
+      //filterTrajectories(trajectories,i);
      
       cout <<"Trajectory size : " <<  trajectories.trajectories.size() << endl;
     } 
-   
+    */
   
     
     ///////////////////////////////////////////////
@@ -74,15 +74,15 @@ int main(int argc, char** argv){
     ///////////////////////////////////////////////
     
     
-    
+    /*
 
     for(unsigned int j = 0;j<blobs.size();j++){
       ellipse(frame,blobs[j].center,Size(blobs[j].a,blobs[j].b),0,0,360,Scalar(255,0,0));
     } 
-    renderTrajectories(trajectories,frame);
+    //renderTrajectories(trajectories,frame);
     imshow("Image",frame);
 
-
+    */
     if(waitKey(500) >= 0) break;
   }
   return 0;

@@ -1,48 +1,13 @@
 #include "blobTracking.hpp"
 
 
-vector<double> getHistogram(const Ellipse & ellipse,const Mat& image,int nBins){
-  
-  int w = 2*max(ellipse.a,ellipse.b);
-  int h = w;
-  int cx = ellipse.center.x-w/2;
-  int cy = ellipse.center.y-h/2;
-  int nPix = 0;
-  // Assign to histogram 
-  vector<double> histo(nBins,0);
-  for(int j = 0;j<h;j++){
-    if(cy+j>=0 && cy+j<image.rows){
-      const Vec3b* row = image.ptr<Vec3b>(cy+j);
-      for(int i = 0;i<w;i++){
-	if(cx+i>=0 && cx+i<image.cols){
-	  double col = row[cx+i][0];
-	  int clip = int((col*nBins)/255 + 0.5);
-	  if(clip>=nBins){ 
-	    clip = nBins-1;
-	  }
-	  histo[clip]+=1;
-	  nPix ++;
-	}
-      }
-    }
-  }
-  for(int k = 0;k<nBins;k++){
-    histo[k]/=nPix;
-  }
-  /*
-  cout << " Histogram with " << nBins << " bins" << endl;
-  for(int i = 0;i<nBins;i++){
-    cout << histos[i] << endl;
-  }
-  cout << " --------- " << endl;
-  */
-  return histo;
-}
 
-
-double evalConfidence(const pair<Ellipse,int>& e1,
-		      const pair<Ellipse,int>& e2,
-		      pair<Ellipse,int>* le,
+double evalConfidence(const Ellipse& e1,
+		      double t1,
+		      const Ellipse& e2,
+		      double t2,
+		      const Ellipse& le,
+		      double tl,
 		      const vector<double>& hist1,
 		      const vector<double>& hist2,
 		      const Mat& image,
@@ -54,21 +19,21 @@ double evalConfidence(const pair<Ellipse,int>& e1,
     double v1t = 0;
     double v2t = 0;
 
-    if(le != NULL){
-      Point2d p1 = e1.first.center;
-      Point2d p2 = e2.first.center;
-      Point2d lp = le->first.center;
+    if(tl>=0){
+      Point2d p1 = e1.center;
+      Point2d p2 = e2.center;
+      Point2d lp = le.center;
       v1r = (p1.x-p2.x)*(p1.x-p2.x)+(p1.y-p2.y)*(p1.y-p2.y);
-      v1r/= (e2.second-e1.second)*(e2.second-e1.second);
+      v1r/= (t2-t1)*(t2-t1);
       
       v2r = (lp.x-p2.x)*(lp.x-p2.x)+(lp.y-p2.y)*(lp.y-p2.y);
-      v2r/= (le->second-e2.second)*(le->second-e2.second);
+      v2r/= (tl-t2)*(tl-t2);
       
       v1r = sqrt(v1r);
       v2r = sqrt(v2r);
       
-      v1t = atan2(e2.first.center.y-e1.first.center.y,e2.first.center.x-e1.first.center.x);
-      v2t = atan2(le->first.center.y-e2.first.center.y,le->first.center.x-e2.first.center.x);
+      v1t = atan2(e2.center.y-e1.center.y,e2.center.x-e1.center.x);
+      v2t = atan2(le.center.y-e2.center.y,le.center.x-e2.center.x);
   }
   
   //compute histogram distance
@@ -80,10 +45,10 @@ double evalConfidence(const pair<Ellipse,int>& e1,
     
   double dVR = abs(v1r-v2r);
   double dVT = min(min(abs(v1t-v2t),abs(v1t-v2t-2*PI)),abs(2*PI+v1t-v2t));
-  double dRad = sqrt((e1.first.a-e2.first.a)*(e1.first.a-e2.first.a) 
-		     +(e1.first.b-e2.first.b)*(e1.first.b-e2.first.b)) ;
+  double dRad = sqrt((e1.a-e2.a)*(e1.a-e2.a) 
+		     +(e1.b-e2.b)*(e1.b-e2.b)) ;
   
-  double dist = e1.first.distanceTo(e2.first);
+  double dist = e1.distanceTo(e2);
   if(dist > p.maxDist || dist < p.minDist || dVT > p.maxRot) return 0;
   cout << dHist << " " << dRad << " " << dVR << " " << dVT << endl;
   double confidence = 1./(p.lambdaHist*dHist+p.lambdaRad*dRad+p.lambdaTSpeed*dVT); 
@@ -92,29 +57,38 @@ double evalConfidence(const pair<Ellipse,int>& e1,
 } 
 
 
-void updateTrajectories(Trajectories& olds,
-		       const vector<pair<Ellipse,int> >& blobs, 
-		       const Mat& image,
-		       const BlobTrackingParameters& p){
+void updateTrajectories(list<Balls::Trajectory>& trajs,
+			vector<double> times,
+			const vector<Ellipse>& blobs, 
+			int frame,
+			const Mat& image,
+			const BlobTrackingParameters& p){
   vector<vector<double> > newHistos(blobs.size());
   for(unsigned int i = 0;i<blobs.size();i++){
-    newHistos[i] = getHistogram(blobs[i].first,image,p.nBins);
+    newHistos[i] = getHistogram(blobs[i],image,p.nBins);
   }
 
-  list<vector<double> >::iterator itH = olds.lastHistograms.begin();
-  for(list<vector<pair<Ellipse,int> > >::iterator it = olds.trajectories.begin();
-      it!=olds.trajectories.end();
+ 
+  for(list<Balls::Trajectory>::iterator it = trajs.begin();
+      it!=trajs.end();
       it++){
     double maxConfidence = 0;
     int index = 0;
     for(unsigned int j = 0;j<blobs.size();j++){
-      pair<Ellipse,int>* le = NULL;
-      if(it->size()>0) le = &(*it)[it->size()-2];
+      Ellipse le;
+      double tl = -1;
+      if(it->length>0){
+	le = it->getEllipse(it->length-2);
+	tl = times[it->getFrame(it->length-2)];
+      }
       double confidence = evalConfidence(blobs[j],
-					 (*it)[it->size()-1],
+					 times[frame],
+					 it->getEllipse(it->length-1),
+					 times[it->getFrame(it->length-1)],
 					 le,
+					 tl,
 					 newHistos[j],
-					 *itH,
+					 it->getHistogram(it->length-1),
 					 image,
 					 p);
       cout << "confidence : " << confidence<< endl;
@@ -124,32 +98,7 @@ void updateTrajectories(Trajectories& olds,
       }
     }
     if(maxConfidence>p.minConfidence){
-      it->push_back(blobs[index]);
-      for(int k = 0;k<p.nBins;k++){
-	(*itH)[k] = newHistos[index][k];
-      }
+      it->addPoint(blobs[index],frame,newHistos[index]);
     }
   } 
-  itH++;
-}
-
-Trajectories initTrajectories(const vector<Ellipse>& blobs,const Mat& image,const BlobTrackingParameters& p){
-  Trajectories trajectories;
-  for(unsigned int i = 0; i<blobs.size(); i++){
-    trajectories.trajectories.push_back(vector<pair<Ellipse,int> >(1,pair<Ellipse,int>(blobs[i],0)));
-    trajectories.lastHistograms.push_back(getHistogram(blobs[i],image,p.nBins));
-  }
-  return trajectories;
-}
-
-void renderTrajectories(const Trajectories& trajectories,Mat& image){
-  for(list<vector<pair<Ellipse,int> > >::const_iterator it = trajectories.trajectories.begin();it!=trajectories.trajectories.end();it++){
-    for(unsigned int j = 0;j<it->size()-1;j++){
-      Point2d p1 = (*it)[j].first.center;
-      Point2d p2 = (*it)[j+1].first.center;
-      
-      //cout << "Distance : " << sqrt((p1.x-p2.x)*(p1.x-p2.x) + (p1.y-p2.y)*(p1.y-p2.y)) << endl;
-      line(image,p1,p2,Scalar(0,0,255));
-    } 
-  }
 }

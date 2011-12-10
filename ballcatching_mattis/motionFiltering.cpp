@@ -125,3 +125,4 @@ void Parabola::render(Mat& image, const Mat& P,const Scalar& col){
     renderPoint(image,P,*it,Scalar(125,125,125));
   }
 }
+
