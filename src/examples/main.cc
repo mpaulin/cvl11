@@ -46,6 +46,7 @@ This file is part of the MAVCONN project
 #include <time.h>
 
 #include "../ballcatching_mattis/ballDetection.hpp"
+#include "StereoProc.h"
 
 // Timer for benchmarking
 struct timeval tv;
@@ -63,6 +64,164 @@ std::string fileExt(".png");
 
 bool quit = false;
 
+float colormap_jet[128][3] =
+{
+		{0.0f,0.0f,0.53125f},
+		{0.0f,0.0f,0.5625f},
+		{0.0f,0.0f,0.59375f},
+		{0.0f,0.0f,0.625f},
+		{0.0f,0.0f,0.65625f},
+		{0.0f,0.0f,0.6875f},
+		{0.0f,0.0f,0.71875f},
+		{0.0f,0.0f,0.75f},
+		{0.0f,0.0f,0.78125f},
+		{0.0f,0.0f,0.8125f},
+		{0.0f,0.0f,0.84375f},
+		{0.0f,0.0f,0.875f},
+		{0.0f,0.0f,0.90625f},
+		{0.0f,0.0f,0.9375f},
+		{0.0f,0.0f,0.96875f},
+		{0.0f,0.0f,1.0f},
+		{0.0f,0.03125f,1.0f},
+		{0.0f,0.0625f,1.0f},
+		{0.0f,0.09375f,1.0f},
+		{0.0f,0.125f,1.0f},
+		{0.0f,0.15625f,1.0f},
+		{0.0f,0.1875f,1.0f},
+		{0.0f,0.21875f,1.0f},
+		{0.0f,0.25f,1.0f},
+		{0.0f,0.28125f,1.0f},
+		{0.0f,0.3125f,1.0f},
+		{0.0f,0.34375f,1.0f},
+		{0.0f,0.375f,1.0f},
+		{0.0f,0.40625f,1.0f},
+		{0.0f,0.4375f,1.0f},
+		{0.0f,0.46875f,1.0f},
+		{0.0f,0.5f,1.0f},
+		{0.0f,0.53125f,1.0f},
+		{0.0f,0.5625f,1.0f},
+		{0.0f,0.59375f,1.0f},
+		{0.0f,0.625f,1.0f},
+		{0.0f,0.65625f,1.0f},
+		{0.0f,0.6875f,1.0f},
+		{0.0f,0.71875f,1.0f},
+		{0.0f,0.75f,1.0f},
+		{0.0f,0.78125f,1.0f},
+		{0.0f,0.8125f,1.0f},
+		{0.0f,0.84375f,1.0f},
+		{0.0f,0.875f,1.0f},
+		{0.0f,0.90625f,1.0f},
+		{0.0f,0.9375f,1.0f},
+		{0.0f,0.96875f,1.0f},
+		{0.0f,1.0f,1.0f},
+		{0.03125f,1.0f,0.96875f},
+		{0.0625f,1.0f,0.9375f},
+		{0.09375f,1.0f,0.90625f},
+		{0.125f,1.0f,0.875f},
+		{0.15625f,1.0f,0.84375f},
+		{0.1875f,1.0f,0.8125f},
+		{0.21875f,1.0f,0.78125f},
+		{0.25f,1.0f,0.75f},
+		{0.28125f,1.0f,0.71875f},
+		{0.3125f,1.0f,0.6875f},
+		{0.34375f,1.0f,0.65625f},
+		{0.375f,1.0f,0.625f},
+		{0.40625f,1.0f,0.59375f},
+		{0.4375f,1.0f,0.5625f},
+		{0.46875f,1.0f,0.53125f},
+		{0.5f,1.0f,0.5f},
+		{0.53125f,1.0f,0.46875f},
+		{0.5625f,1.0f,0.4375f},
+		{0.59375f,1.0f,0.40625f},
+		{0.625f,1.0f,0.375f},
+		{0.65625f,1.0f,0.34375f},
+		{0.6875f,1.0f,0.3125f},
+		{0.71875f,1.0f,0.28125f},
+		{0.75f,1.0f,0.25f},
+		{0.78125f,1.0f,0.21875f},
+		{0.8125f,1.0f,0.1875f},
+		{0.84375f,1.0f,0.15625f},
+		{0.875f,1.0f,0.125f},
+		{0.90625f,1.0f,0.09375f},
+		{0.9375f,1.0f,0.0625f},
+		{0.96875f,1.0f,0.03125f},
+		{1.0f,1.0f,0.0f},
+		{1.0f,0.96875f,0.0f},
+		{1.0f,0.9375f,0.0f},
+		{1.0f,0.90625f,0.0f},
+		{1.0f,0.875f,0.0f},
+		{1.0f,0.84375f,0.0f},
+		{1.0f,0.8125f,0.0f},
+		{1.0f,0.78125f,0.0f},
+		{1.0f,0.75f,0.0f},
+		{1.0f,0.71875f,0.0f},
+		{1.0f,0.6875f,0.0f},
+		{1.0f,0.65625f,0.0f},
+		{1.0f,0.625f,0.0f},
+		{1.0f,0.59375f,0.0f},
+		{1.0f,0.5625f,0.0f},
+		{1.0f,0.53125f,0.0f},
+		{1.0f,0.5f,0.0f},
+		{1.0f,0.46875f,0.0f},
+		{1.0f,0.4375f,0.0f},
+		{1.0f,0.40625f,0.0f},
+		{1.0f,0.375f,0.0f},
+		{1.0f,0.34375f,0.0f},
+		{1.0f,0.3125f,0.0f},
+		{1.0f,0.28125f,0.0f},
+		{1.0f,0.25f,0.0f},
+		{1.0f,0.21875f,0.0f},
+		{1.0f,0.1875f,0.0f},
+		{1.0f,0.15625f,0.0f},
+		{1.0f,0.125f,0.0f},
+		{1.0f,0.09375f,0.0f},
+		{1.0f,0.0625f,0.0f},
+		{1.0f,0.03125f,0.0f},
+		{1.0f,0.0f,0.0f},
+		{0.96875f,0.0f,0.0f},
+		{0.9375f,0.0f,0.0f},
+		{0.90625f,0.0f,0.0f},
+		{0.875f,0.0f,0.0f},
+		{0.84375f,0.0f,0.0f},
+		{0.8125f,0.0f,0.0f},
+		{0.78125f,0.0f,0.0f},
+		{0.75f,0.0f,0.0f},
+		{0.71875f,0.0f,0.0f},
+		{0.6875f,0.0f,0.0f},
+		{0.65625f,0.0f,0.0f},
+		{0.625f,0.0f,0.0f},
+		{0.59375f,0.0f,0.0f},
+		{0.5625f,0.0f,0.0f},
+		{0.53125f,0.0f,0.0f},
+		{0.5f,0.0f,0.0f}
+};
+
+void
+colorDepthImage(cv::Mat& imgDepth, cv::Mat& imgColoredDepth)
+{
+	imgColoredDepth = cv::Mat::zeros(imgDepth.size(), CV_8UC3);
+
+	for (int i = 0; i < imgColoredDepth.rows; ++i)
+	{
+		const float* depth = imgDepth.ptr<float>(i);
+		unsigned char* pixel = imgColoredDepth.ptr<unsigned char>(i);
+		for (int j = 0; j < imgColoredDepth.cols; ++j)
+		{
+			if (depth[j] != 0)
+			{
+				int idx = fminf(depth[j], 10.0f) / 10.0f * 127.0f;
+				idx = 127 - idx;
+
+				pixel[0] = colormap_jet[idx][2] * 255.0f;
+				pixel[1] = colormap_jet[idx][1] * 255.0f;
+				pixel[2] = colormap_jet[idx][0] * 255.0f;
+			}
+
+			pixel += 3;
+		}
+	}
+}
+
 void
 signalHandler(int signal)
 {
@@ -75,6 +234,7 @@ signalHandler(int signal)
 }
 
 BallDetector ballDetector;
+StereoProc stereoProc("/home/mattis/ETHZ/CVLabs/cvl11/src/examples/calib_stereo_bravo_bluefox.scf");
 /**
  * @brief Handle incoming MAVLink packets containing images
  *
@@ -100,17 +260,25 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 		// APPLY ONE OF THE OPENCV FUNCTIONS HERE, AND OUTPUT IMAGE HERE
 		//////////////////////////////////////
 
-
-
 		struct timeval tv;
 		gettimeofday(&tv, NULL);
 		uint64_t currTime = ((uint64_t)tv.tv_sec) * 1000000 + tv.tv_usec;
 		uint64_t timestamp = client->getTimestamp(msg);
+		Mat img_left_und;
+		Mat img_right_und;
+		stereoProc.undistort(img_left,img_right,img_left_und,img_right_und);
+		ballDetector.addData(img_left_und,Mat(),img_right_und,Mat(),timestamp);
+		ballDetector.render(img_left_und,img_right_und);
 
-
-		ballDetector.addData(img_left,Mat(),img_right,Mat(),timestamp);
-		ballDetector.render(img_left,img_right);
-
+#if 0
+		Mat depth;
+		Mat undistorted;
+		stereoProc.process(img_left,img_right,undistorted,depth);
+		namedWindow("Depth");
+		Mat colorDepth;
+		colorDepthImage(depth,colorDepth);
+		imshow("Depth",colorDepth);
+#endif
 		uint64_t diff = currTime - timestamp;
 
 		if (verbose)
@@ -123,22 +291,22 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 		if ((client->getCameraConfig() & PxSHM::CAMERA_FORWARD_LEFT) == PxSHM::CAMERA_FORWARD_LEFT)
 		{
 			cv::namedWindow("Left Image (Forward Camera)");
-			cv::imshow("Left Image (Forward Camera)", img_left);
+			cv::imshow("Left Image (Forward Camera)", img_left_und);
 		}
 		else
 		{
 			cv::namedWindow("Left Image (Downward Camera)");
-			cv::imshow("Left Image (Downward Camera)", img_left);
+			cv::imshow("Left Image (Downward Camera)", img_left_und);
 		}
 		if ((client->getCameraConfig() & PxSHM::CAMERA_FORWARD_RIGHT) == PxSHM::CAMERA_FORWARD_RIGHT)
 		{
 			cv::namedWindow("Right Image (Forward Camera)");
-			cv::imshow("Right Image (Forward Camera)", img_right);
+			cv::imshow("Right Image (Forward Camera)", img_right_und);
 		}
 		else
 		{
 			cv::namedWindow("Right Image (Downward Camera)");
-			cv::imshow("Right Image (Downward Camera)", img_right);
+			cv::imshow("Right Image (Downward Camera)", img_right_und);
 		}
 #endif
 		img_left.copyTo(imgToSave);
