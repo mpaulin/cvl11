@@ -24,14 +24,16 @@ PIXHAWK_LINK_LIBRARIES(example-process-image
   lcm
 )
 
-PIXHAWK_EXECUTABLE(funkyprocessing funkyprocessing.cc)
-PIXHAWK_LINK_LIBRARIES(funkyprocessing
+PIXHAWK_EXECUTABLE(main main.cc StereoProc)
+PIXHAWK_LINK_LIBRARIES(main
   ${GLIB2_LIBRARY}
   ${GTHREAD2_LIBRARY}
   ${OPENCV_CORE_LIBRARY_OPTIMIZED}
   ${OPENCV_IMGPROC_LIBRARY_OPTIMIZED}
   ${OPENCV_HIGHGUI_LIBRARY_OPTIMIZED}
+  ${OPENCV_LEGACY_LIBRARY_OPTIMIZED}
   mavconn_lcm
   mavconn_shm
   lcm
+  BallDetection
 )
