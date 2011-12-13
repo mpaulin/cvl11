@@ -53,7 +53,9 @@ public:
   class Trajectory{
   public:
     int length;
-    Trajectory(){}
+    Trajectory(){
+    	length = 0;
+    }
     
     Ellipse getEllipse(int i) const{
       return ellipses[i];
@@ -81,6 +83,8 @@ public:
 
   list<Trajectory> trajectories_left;
   list<Trajectory> trajectories_right;
+  vector<Ellipse> currentBlobs_left;
+  vector<Ellipse> currentBlobs_right;
   vector<double> times;
   vector<Mat> cameras_left;
   vector<Mat> cameras_right;

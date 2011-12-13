@@ -36,7 +36,7 @@ Plane::Plane(const vector<Point3d>& points){
 
 pair<Vec3d,Vec3d> Plane::getBase(){
   Vec3d b1(-b,a,0);
-  b1 *= 1/norm(b1);
+  b1 *= 1/cv::norm(b1);
   Vec3d b2(0,0,1);
   return pair<Vec3d,Vec3d>(b1,b2);
 }

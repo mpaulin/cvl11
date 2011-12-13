@@ -42,7 +42,7 @@ public:
 void updateTrajectories(list<Balls::Trajectory>& trajs,
 			const vector<double>& times,
 			const vector<Ellipse> & blobs,
-			double time,
+			int frame,
 			const Mat& image,
 			const BlobTrackingParameters& p = 
 	 		BlobTrackingParameters());

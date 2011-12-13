@@ -58,7 +58,7 @@ double evalConfidence(const Ellipse& e1,
 
 
 void updateTrajectories(list<Balls::Trajectory>& trajs,
-			vector<double> times,
+			const vector<double>& times,
 			const vector<Ellipse>& blobs, 
 			int frame,
 			const Mat& image,
@@ -68,7 +68,15 @@ void updateTrajectories(list<Balls::Trajectory>& trajs,
     newHistos[i] = getHistogram(blobs[i],image,p.nBins);
   }
 
- 
+  if(trajs.size()==0){//Initialization
+    for(unsigned int i = 0;i<blobs.size();i++){
+      Balls::Trajectory t;
+      t.addPoint(blobs[i],frame,newHistos[i]);
+      trajs.push_back(t);
+    }
+    return;
+  }
+
   for(list<Balls::Trajectory>::iterator it = trajs.begin();
       it!=trajs.end();
       it++){

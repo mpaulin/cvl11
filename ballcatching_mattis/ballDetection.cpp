@@ -1,6 +1,6 @@
 #include "ballDetection.hpp"
 
-void BallDetector::BallDetector{
+BallDetector::BallDetector(){
   CvGaussBGStatModelParams* params = new CvGaussBGStatModelParams;		     
   params->win_size=200;	
   params->n_gauss=5;
@@ -9,23 +9,40 @@ void BallDetector::BallDetector{
   params->minArea=15.f;
   params->weight_init=0.05;
   params->variance_init=30; 
-  FGDetector = cvCreateFGDetectorBase(CV_BG_MODEL_MOG,params);
+  FGDetector_left = cvCreateFGDetectorBase(CV_BG_MODEL_MOG,params);
+  FGDetector_right = cvCreateFGDetectorBase(CV_BG_MODEL_MOG,params);
+  frame = 0;
+  beginFrame = 500;
 }
 
-Point3d BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& image_right,const Mat& P_right,int time){
+void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& image_right,const Mat& P_right,int time){
 
-  FGDetector->Process(image_left);
-  mask_left = FGDetector->GetMask();
-  vector<Ellipse> blobs_left = getBlobs(mask_left);
-  vector<Ellipse> blobs_right = getBlobs(mask_right);
+  FGDetector_left->Process(new IplImage(image_left));
+  FGDetector_right->Process(new IplImage(image_right));
+  Mat mask_left = FGDetector_left->GetMask();
+  Mat mask_right = FGDetector_right->GetMask();
   
-  balls.times.push_back(time);
 
-  updateTrajectories(balls.trajectories_left,balls.histograms_left,balls.times,blobs_left,time,image_left);
-  updateTrajectories(balls.trajcetories_right,balls.histograms_right,balls.times,blobs_right,time,image_right);
   
-  //filterTrajectories(trajectories_left,time);
-  //filterTrajectories(trajectories_right,time);
+
+  if(frame>=beginFrame){
+    vector<Ellipse> blobs_left = getBlobs(mask_left);
+    vector<Ellipse> blobs_right = getBlobs(mask_right);
+
+    balls.currentBlobs_left = blobs_left;
+    balls.currentBlobs_right = blobs_right;
+
+    double time_s = double(time)/1000000;
+    balls.times.push_back(time_s);
+
+    updateTrajectories(balls.trajectories_left,balls.times,blobs_left,frame,image_left);
+    updateTrajectories(balls.trajectories_right,balls.times,blobs_right,frame,image_right);
+  
+    //filterTrajectories(trajectories_left,time);
+    //filterTrajectories(trajectories_right,time);
+  }
+  cout << "Frame " << frame << endl;
+  frame++;
 }
 
 Point3d predictImpact(){
@@ -33,6 +50,9 @@ Point3d predictImpact(){
   return Point3d(0,0,0);
 }
 
-void render(Mat& image_left,Mat& image_right){
+void BallDetector::render(Mat& image_left,Mat& image_right){
+  for(vector<Ellipse>::const_iterator it = balls.currentBlobs_left.begin();it!=balls.currentBlobs_left.end();it++){
+    ellipse(image_left,it->center,Size(it->a,it->b),it->theta,0,360,Scalar(255,255,0));
+  }
   balls.render(image_left,image_right);
 }
