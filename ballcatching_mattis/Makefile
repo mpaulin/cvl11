@@ -1,12 +1,18 @@
-CC=g++
-LIBS=-lopencv_core -lopencv_legacy
-FLAGS=-Wall -O2 -g
+CC := g++
+LIBS := -lopencv_core -lopencv_legacy
+FLAGS := -Wall -O2
+FGBG_OBJECTS := FGBGTest.o config.o pixelDisjointSet.o blobDetection.o blobTracking.o trajectoryFiltering.o motionFiltering.o ballDetection.o
 
 all: blobtrack_test FGBGTest
 
-blobtrack_test: blobtrack_test.cpp pixelDisjointSet.cpp config.hpp
-	$(CC) $(FLAGS) $^ -o blobtrack_test $(LIBS)
+blobtrack_test: blobtrack_test.o
+	$(CC) $(FLAGS) $^ -o $@ $(LIBS)
 
-FGBGTest: FGBGTest.cpp pixelDisjointSet.cpp blobDetection.cpp config.hpp
-	$(CC) $(FLAGS) $^ -o FGBGTest $(LIBS)
+FGBGTest: $(FGBG_OBJECTS)
+	$(CC) $(FLAGS) $^ -o $@ $(LIBS)
 
+%.o: %.cpp %.hpp
+	$(CC) $(FLAGS) -c $< -o $@ 
+
+clean:
+	rm *.o

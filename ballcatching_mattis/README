@@ -110,4 +110,4 @@ source: motionFiltering.cpp
 Does the following:
      - Match blobs in stereo images
      - Find the best fitting parabola
-     - Discard trajectories that don't fit it.
+     - Discard trajectories that don't fit it well.

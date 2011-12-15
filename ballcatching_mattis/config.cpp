@@ -5,7 +5,7 @@ void renderPoint(Mat& image, const Mat& P,const Point3d& X, const Scalar& col){
   Vec4d Xh(X.x,X.y,X.z,1);
   Mat ph = P*Mat(Xh);
   Point2d pp(ph.at<double>(0,0)/ph.at<double>(2,0),ph.at<double>(1,0)/ph.at<double>(2,0));
-  cout << pp << endl;
+  //cout << pp << endl;
   circle(image,pp,2,col);
 }
 
