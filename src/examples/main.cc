@@ -274,10 +274,6 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 		float roll,pitch,yaw;
 		client->getRollPitchYaw(msg,roll,pitch,yaw);
 		std::cout << roll << " " << pitch << " " << yaw << std::endl;
-		//swap roll and pitch to account for the
-		float tmp = roll;
-		roll=pitch;
-		pitch = tmp;
 
 		//Debug
 		//roll=pitch = 0;
@@ -306,7 +302,7 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 
 
 		cv::Mat rot(4,4,CV_64F,rotMat);
-		std::cout << rot << std::endl;
+		//std::cout << rot << std::endl;
 		cv::Mat rot2(4,4,CV_64F,rotMat2);
 
 		cv::Mat P1 = stereoProc.P1*rot2*rot;
