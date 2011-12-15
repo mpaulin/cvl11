@@ -45,7 +45,8 @@ This file is part of the MAVCONN project
 #include <sys/time.h>
 #include <time.h>
 
-#include "../ballcatching_mattis/ballDetection.hpp"
+//#include "../ballcatching_mattis/ballDetection.hpp"
+#include "../ballcatching_mattis/config.hpp"
 #include "StereoProc.h"
 
 // Timer for benchmarking
@@ -233,7 +234,7 @@ signalHandler(int signal)
 	}
 }
 
-BallDetector ballDetector;
+//BallDetector ballDetector;
 StereoProc stereoProc("/home/mattis/ETHZ/CVLabs/cvl11/src/examples/calib_stereo_bravo_bluefox.scf");
 /**
  * @brief Handle incoming MAVLink packets containing images
@@ -264,20 +265,77 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 		gettimeofday(&tv, NULL);
 		uint64_t currTime = ((uint64_t)tv.tv_sec) * 1000000 + tv.tv_usec;
 		uint64_t timestamp = client->getTimestamp(msg);
-		Mat img_left_und;
-		Mat img_right_und;
+		cv::Mat img_left_und;
+		cv::Mat img_right_und;
 		stereoProc.undistort(img_left,img_right,img_left_und,img_right_und);
-		ballDetector.addData(img_left_und,Mat(),img_right_und,Mat(),timestamp);
-		ballDetector.render(img_left_und,img_right_und);
+		//ballDetector.addData(img_left_und,Mat(),img_right_und,Mat(),timestamp);
+		//ballDetector.render(img_left_und,img_right_und);
 
-#if 0
-		Mat depth;
-		Mat undistorted;
+		float roll,pitch,yaw;
+		client->getRollPitchYaw(msg,roll,pitch,yaw);
+		std::cout << roll << " " << pitch << " " << yaw << std::endl;
+		//swap roll and pitch to account for the
+		float tmp = roll;
+		roll=pitch;
+		pitch = tmp;
+
+		//Debug
+		//roll=pitch = 0;
+
+
+		float x,y,z;
+		client->getGroundTruth(msg,x,y,z);
+		//Debug
+		//x = y = z = 0;
+		float ca = cos(-yaw),sa = sin(-yaw),cb = cos(pitch),sb = sin(pitch),cg = cos(roll),sg = sin(roll);
+		double rotMat[4][4] =
+			{{ca*cb,    ca*sb*sg-sa*cg,      ca*sb*cg+sa*sg,    x},
+			 {sa*cb,    sa*sb*sg+ca*cg,      sa*sb*cg-ca*sg,    y},
+			 {-sb,          cb*sg,               cb*cg,         z},
+			 {0,              0,                   0,           1}};
+
+		//x->z
+		//y->x
+		//z->y
+		double rotMat2[4][4] =
+		{{0,1,0,0},
+		 {0,0,1,0},
+		 {1,0,0,0},
+		 {0,0,0,1}
+		};
+
+
+		cv::Mat rot(4,4,CV_64F,rotMat);
+		std::cout << rot << std::endl;
+		cv::Mat rot2(4,4,CV_64F,rotMat2);
+
+		cv::Mat P1 = stereoProc.P1*rot2*rot;
+		cv::Mat P2 = stereoProc.P2*rot2*rot;
+
+
+		//cout << stereoProc.P1 << endl;
+		renderLine(img_left_und,P1,cv::Point3d(-10,0,0),cv::Point3d(10,0,0),cv::Scalar(255,0,0));
+		renderLine(img_left_und,P1,cv::Point3d(0,-10,0),cv::Point3d(0,10,0),cv::Scalar(125,0,0));
+		//cout << stereoProc.P1 << endl;
+		renderPoint(img_left_und,stereoProc.P1,cv::Point3d(0,0.1,2),cv::Scalar(255,0,0));
+		renderPoint(img_left_und,stereoProc.P1,cv::Point3d(0,0,2),cv::Scalar(125,0,0));
+		renderPoint(img_left_und,stereoProc.P1,cv::Point3d(0.1,0,2),cv::Scalar(0,0,0));
+		renderPoint(img_left_und,P1,cv::Point3d(0,-2,0),cv::Scalar(125,0,0));
+		renderPoint(img_left_und,P1,cv::Point3d(0,-1.9,0),cv::Scalar(0,0,0));
+		renderPoint(img_left_und,P1,cv::Point3d(0,-2,0.1),cv::Scalar(255,0,0));
+
+		//double origin[4] = {0,2,0,1};
+		//Mat orig = P1*Mat(4,1,CV_64F,origin);
+		//cout << orig.at<double>(0,0)/orig.at<double>(2,0) << " " <<orig.at<double>(1,0)/orig.at<double>(2,0) << endl;
+
+#if 1
+		cv::Mat depth;
+		cv::Mat undistorted;
 		stereoProc.process(img_left,img_right,undistorted,depth);
-		namedWindow("Depth");
-		Mat colorDepth;
+		cv::namedWindow("Depth");
+		cv::Mat colorDepth;
 		colorDepthImage(depth,colorDepth);
-		imshow("Depth",colorDepth);
+		cv::imshow("Depth",colorDepth);
 #endif
 		uint64_t diff = currTime - timestamp;
 
