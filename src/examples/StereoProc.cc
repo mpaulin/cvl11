@@ -97,13 +97,13 @@ StereoProc::init(const std::string& configFile)
     cv::Mat rotationMat;
     cv::Rodrigues(rotationVec, rotationMat);
 
-    cv::Mat R1, R2, P1, P2, Q;
+    cv::Mat R1, R2, Q;
     cv::Rect rectROILeft;
 
     cv::stereoRectify(intrinsicMatL, distortionMatL,
     		intrinsicMatR, distortionMatR,
     		frameSize, rotationMat, translationVec,
-    		R1, R2, P1, P2, Q, cv::CALIB_ZERO_DISPARITY, -1,
+    		R1, R2, P1, P2, Q, 0, -1,
     		cv::Size(0,0), &rectROILeft);
 
 	cv::initUndistortRectifyMap(intrinsicMatL, distortionMatR, R1, P1,

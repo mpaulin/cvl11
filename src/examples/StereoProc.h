@@ -15,6 +15,8 @@ public:
 	bool process(cv::Mat& img1, cv::Mat& img2,
 				 cv::Mat& imgRectified, cv::Mat& imgDepth);
 
+	cv::Mat P1;
+	cv::Mat P2;
 private:
 	cv::StereoBM mStereoBM;
 
@@ -31,6 +33,7 @@ private:
 	cv::Mat mUndistortMapYLeft;
 	cv::Mat mUndistortMapXRight;
 	cv::Mat mUndistortMapYRight;
+
 };
 
 #endif
