@@ -86,5 +86,7 @@ INCLUDE_DIRECTORIES(
 )
 
 # CVL11 code
+
+ADD_SUBDIRECTORY(ballcatching_mattis)
 ADD_SUBDIRECTORY(examples)
 
