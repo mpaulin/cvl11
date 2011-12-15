@@ -1,3 +1,7 @@
+#include "blobDetection.hpp"
+#include "blobTracking.hpp"
+#include "trajectoryFiltering.hpp"
+
 #include "ballDetection.hpp"
 
 BallDetector::BallDetector(){
@@ -12,19 +16,16 @@ BallDetector::BallDetector(){
   FGDetector_left = cvCreateFGDetectorBase(CV_BG_MODEL_MOG,params);
   FGDetector_right = cvCreateFGDetectorBase(CV_BG_MODEL_MOG,params);
   frame = 0;
-  beginFrame = 500;
+  beginFrame = 100;
 }
 
-void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& image_right,const Mat& P_right,int time){
+void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& image_right,const Mat& P_right,long int time){
 
   FGDetector_left->Process(new IplImage(image_left));
   FGDetector_right->Process(new IplImage(image_right));
   Mat mask_left = FGDetector_left->GetMask();
   Mat mask_right = FGDetector_right->GetMask();
   
-
-  
-
   if(frame>=beginFrame){
     vector<Ellipse> blobs_left = getBlobs(mask_left);
     vector<Ellipse> blobs_right = getBlobs(mask_right);
@@ -38,8 +39,10 @@ void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& im
     updateTrajectories(balls.trajectories_left,balls.times,blobs_left,frame,image_left);
     updateTrajectories(balls.trajectories_right,balls.times,blobs_right,frame,image_right);
   
-    //filterTrajectories(trajectories_left,time);
-    //filterTrajectories(trajectories_right,time);
+    filterTrajectories(balls.trajectories_left,balls.times,frame);
+    filterTrajectories(balls.trajectories_right,balls.times,frame);
+
+    parabola = motionFilter(balls);
   }
   cout << "Frame " << frame << endl;
   frame++;
@@ -51,8 +54,10 @@ Point3d predictImpact(){
 }
 
 void BallDetector::render(Mat& image_left,Mat& image_right){
-  for(vector<Ellipse>::const_iterator it = balls.currentBlobs_left.begin();it!=balls.currentBlobs_left.end();it++){
-    ellipse(image_left,it->center,Size(it->a,it->b),it->theta,0,360,Scalar(255,255,0));
-  }
-  balls.render(image_left,image_right);
+	if(frame<=beginFrame) return;
+	for(vector<Ellipse>::const_iterator it = balls.currentBlobs_left.begin();it!=balls.currentBlobs_left.end();it++){
+		ellipse(image_left,it->center,Size(it->a,it->b),it->theta,0,360,Scalar(255,255,0));
+	}
+	balls.render(image_left,image_right);
+	parabola.render(image_left,balls.cameras_left[balls.cameras_left.size()-1],Scalar(255,0,0));
 }

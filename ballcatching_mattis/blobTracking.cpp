@@ -50,12 +50,11 @@ double evalConfidence(const Ellipse& e1,
   
   double dist = e1.distanceTo(e2);
   if(dist > p.maxDist || dist < p.minDist || dVT > p.maxRot) return 0;
-  cout << dHist << " " << dRad << " " << dVR << " " << dVT << endl;
+  //cout << dHist << " " << dRad << " " << dVR << " " << dVT << endl;
   double confidence = 1./(p.lambdaHist*dHist+p.lambdaRad*dRad+p.lambdaTSpeed*dVT); 
   //cout << v1r << endl;
   return confidence;
 } 
-
 
 void updateTrajectories(list<Balls::Trajectory>& trajs,
 			const vector<double>& times,
@@ -99,7 +98,7 @@ void updateTrajectories(list<Balls::Trajectory>& trajs,
 					 it->getHistogram(it->length-1),
 					 image,
 					 p);
-      cout << "confidence : " << confidence<< endl;
+      //cout << "confidence : " << confidence<< endl;
       if(confidence > maxConfidence){
 	index = j;
 	maxConfidence = confidence;

@@ -1,6 +1,6 @@
 #include "blobDetection.hpp"
 
-map<int,vector<Point2i> > cluster(const Mat& image){
+unordered_map<int,vector<Point2i> > cluster(const Mat& image){
   DisjointSet disjointSet(image.cols,image.rows);
   for(int y = 0; y < image.rows; y++){
     const unsigned char* prevRow = NULL;
@@ -18,16 +18,16 @@ map<int,vector<Point2i> > cluster(const Mat& image){
       }
     }
   }
-  map<int,vector<Point2i> > clusters;
+  unordered_map<int,vector<Point2i> > clusters;
   for(int y = 0;y<image.rows;y++){
     for(int x = 0;x<image.cols;x++){
       Pixel p = disjointSet.find(x,y);
       int i = p.parent;
       if(!clusters.count(i)){
-	clusters.insert(pair<int,vector<Point2i> >(i,vector<Point2i>(1,Point2i(x,y))));
+    	  clusters.insert(pair<int,vector<Point2i> >(i,vector<Point2i>(1,Point2i(x,y))));
       }
       else{
-	clusters[i].push_back(Point2i(x,y));
+    	  clusters[i].push_back(Point2i(x,y));
       }
     }
   }
@@ -35,9 +35,9 @@ map<int,vector<Point2i> > cluster(const Mat& image){
 }
 
 
-Mat clustersToImage(const map<int,vector<Point2i> >& clusters, int width,int height){
+Mat clustersToImage(const unordered_map<int,vector<Point2i> >& clusters, int width,int height){
   Mat clusteredImage(height,width,CV_8UC1);
-  for(map<int,vector<Point2i> >::const_iterator it = clusters.begin();it!=clusters.end();it++){
+  for(unordered_map<int,vector<Point2i> >::const_iterator it = clusters.begin();it!=clusters.end();it++){
     for(vector<Point2i>::const_iterator it2 = it->second.begin(); it2!=it->second.end();it2++){
       clusteredImage.at<unsigned char>(it2->y,it2->x) = (73153413*it->first)%(255);
     }
@@ -46,9 +46,9 @@ Mat clustersToImage(const map<int,vector<Point2i> >& clusters, int width,int hei
   return clusteredImage;
 }
 
-vector<Mat> clustersAsMats(const map<int,vector<Point2i> >& clusters){
+vector<Mat> clustersAsMats(const unordered_map<int,vector<Point2i> >& clusters){
   vector<Mat> result;
-   for(map<int,vector<Point2i> >::const_iterator it = clusters.begin();it!=clusters.end();it++){
+   for(unordered_map<int,vector<Point2i> >::const_iterator it = clusters.begin();it!=clusters.end();it++){
      Mat m(2,it->second.size(),CV_64F);
      for(unsigned int i = 0;i<it->second.size();i++){
        m.at<double>(0,i) = it->second[i].x;
@@ -78,9 +78,9 @@ vector<Point2i> getCenters(const vector<Mat>& clusters){
   return centers;
 }
 
-vector<Ellipse> getBlobs(const map<int,vector<Point2i> >& clusters,BlobDetectionParameters p){
+vector<Ellipse> getBlobs(const unordered_map<int,vector<Point2i> >& clusters,BlobDetectionParameters p){
   vector<Ellipse> blobs;
-  for(map<int,vector<Point2i> >::const_iterator it = clusters.begin();it != clusters.end();it++){
+  for(unordered_map<int,vector<Point2i> >::const_iterator it = clusters.begin();it != clusters.end();it++){
     float radius;
     Point2f center;
     minEnclosingCircle(it->second,center,radius);
@@ -93,6 +93,6 @@ vector<Ellipse> getBlobs(const map<int,vector<Point2i> >& clusters,BlobDetection
 
 
 vector<Ellipse> getBlobs(const Mat& image,BlobDetectionParameters p){
-  map<int,vector<Point2i> > clusters = cluster(image);
-  return getBlobs(clusters);
+  unordered_map<int,vector<Point2i> > clusters = cluster(image);
+  return getBlobs(clusters,p);
 }

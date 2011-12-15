@@ -9,7 +9,8 @@ void filterTrajectories(list<Balls::Trajectory>& trajectories,
   for(list<Balls::Trajectory>::iterator it = trajectories.begin();
       it!=trajectories.end();
       ++it){
-    if(times[frame]-times[it->getFrame(it->length-1)] > p.loosingFrames){
+    if(times[frame]-times[it->getFrame(it->length-1)] > p.loosingFrames
+    		|| it->length > p.maxFramePerTrajectory){
       toRemove.push_back(it);
     }
   }

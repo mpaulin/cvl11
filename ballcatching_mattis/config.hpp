@@ -45,7 +45,6 @@ public:
   void render(Mat& image){
     ellipse(image,center,Size(a,b),theta,0,360,Scalar(255,0,0));
   }
-
 };
  
 class Balls{
@@ -65,7 +64,7 @@ public:
       return frames[i];
     }
 
-    vector<double> getHistogram(int i){
+    vector<double> getHistogram(int i) const{
       return histograms[i];
     }
 
@@ -75,10 +74,22 @@ public:
       histograms.push_back(hist);
       length++;
     }
+
   private:
     vector<Ellipse> ellipses;
     vector<int> frames;
     vector<vector<double> > histograms;
+  };
+
+  class Trajectory3D{
+  public:
+	  vector<Point3d> points;
+	  vector<int> frames;
+
+	  Trajectory3D(const vector<Point3d>& p,const vector<int> t){
+		  points = p;
+		  frames = t;
+	  }
   };
 
   list<Trajectory> trajectories_left;
@@ -88,8 +99,7 @@ public:
   vector<double> times;
   vector<Mat> cameras_left;
   vector<Mat> cameras_right;
-  list<int> matchings;
-  list<vector<Point3d> > balls;
+  list<Trajectory3D> trajectories3D;
 
   void render(Mat&, Mat&);
 };
