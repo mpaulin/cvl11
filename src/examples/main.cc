@@ -59,7 +59,7 @@ bool debug = 0;
 static GString* configFile = g_string_new("conf/abc.cfg");
 
 int imageCounter = 0;
-std::string fileBaseName("frame");
+std::string fileBaseName("/home/mattis/ETHZ/CVLabs/cvl11/tmp/frame");
 std::string fileExt(".png");
 
 bool quit = false;
@@ -234,7 +234,7 @@ signalHandler(int signal)
 }
 
 BallDetector ballDetector;
-StereoProc stereoProc("/home/mattis/ETHZ/CVLabs/cvl11/dataset_capture/calib_stereo_bravo_bluefox.scf");
+StereoProc stereoProc("/home/mattis/ETHZ/CVLabs/cvl11/dataset_capture/calib_stereo_bravo_front.scf");
 /**
  * @brief Handle incoming MAVLink packets containing images
  *
@@ -363,20 +363,20 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 
 #endif
 #endif
-		img_left.copyTo(imgToSave);
+//#define DO_SAVING
+#ifdef DO_SAVING
+	if(img_left_und.cols>0 && img_left_und.rows>0){
+		char index[20];
+		sprintf(index, "%04d", imageCounter++);
+		cv::imwrite(std::string(fileBaseName+index+fileExt).c_str(), img_left_und);
+	}
+#endif
 	}
 
 #ifndef NO_DISPLAY
 	int c = cv::waitKey(3);
 	switch (static_cast<char>(c))
 	{
-	case 'f':
-	{
-		char index[20];
-		sprintf(index, "%04d", imageCounter++);
-		cv::imwrite(std::string(fileBaseName+index+fileExt).c_str(), imgToSave);
-	}
-	break;
 	default:
 		break;
 	}
