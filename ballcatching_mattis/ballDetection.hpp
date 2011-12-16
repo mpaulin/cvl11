@@ -10,6 +10,8 @@ public:
   CvFGDetector* FGDetector_right;
   Balls balls;
   Parabola parabola;
+  Mat mask_left;
+  Mat mask_right;
   int frame;
   int beginFrame;
   BallDetector();

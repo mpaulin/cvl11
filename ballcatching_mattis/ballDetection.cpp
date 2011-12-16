@@ -16,15 +16,15 @@ BallDetector::BallDetector(){
   FGDetector_left = cvCreateFGDetectorBase(CV_BG_MODEL_MOG,params);
   FGDetector_right = cvCreateFGDetectorBase(CV_BG_MODEL_MOG,params);
   frame = 0;
-  beginFrame = 100;
+  beginFrame = 2;
 }
 
 void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& image_right,const Mat& P_right,long int time){
 
   FGDetector_left->Process(new IplImage(image_left));
   FGDetector_right->Process(new IplImage(image_right));
-  Mat mask_left = FGDetector_left->GetMask();
-  Mat mask_right = FGDetector_right->GetMask();
+  mask_left = FGDetector_left->GetMask();
+  mask_right = FGDetector_right->GetMask();
   
   if(frame>=beginFrame){
     vector<Ellipse> blobs_left = getBlobs(mask_left);
@@ -35,6 +35,8 @@ void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& im
 
     double time_s = double(time)/1000000;
     balls.times.push_back(time_s);
+    balls.cameras_left.push_back(P_left);
+    balls.cameras_right.push_back(P_right);
 
     updateTrajectories(balls.trajectories_left,balls.times,blobs_left,frame,image_left);
     updateTrajectories(balls.trajectories_right,balls.times,blobs_right,frame,image_right);
@@ -57,6 +59,9 @@ void BallDetector::render(Mat& image_left,Mat& image_right){
 	if(frame<=beginFrame) return;
 	for(vector<Ellipse>::const_iterator it = balls.currentBlobs_left.begin();it!=balls.currentBlobs_left.end();it++){
 		ellipse(image_left,it->center,Size(it->a,it->b),it->theta,0,360,Scalar(255,255,0));
+	}
+	for(vector<Ellipse>::const_iterator it = balls.currentBlobs_right.begin();it!=balls.currentBlobs_right.end();it++){
+			ellipse(image_right,it->center,Size(it->a,it->b),it->theta,0,360,Scalar(255,255,0));
 	}
 	balls.render(image_left,image_right);
 	parabola.render(image_left,balls.cameras_left[balls.cameras_left.size()-1],Scalar(255,0,0));

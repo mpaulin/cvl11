@@ -23,11 +23,13 @@ unordered_map<int,vector<Point2i> > cluster(const Mat& image){
     for(int x = 0;x<image.cols;x++){
       Pixel p = disjointSet.find(x,y);
       int i = p.parent;
-      if(!clusters.count(i)){
-    	  clusters.insert(pair<int,vector<Point2i> >(i,vector<Point2i>(1,Point2i(x,y))));
-      }
-      else{
-    	  clusters[i].push_back(Point2i(x,y));
+      if(!p.parent==0){
+    	  if(!clusters.count(i)){
+    		  clusters.insert(pair<int,vector<Point2i> >(i,vector<Point2i>(1,Point2i(x,y))));
+    	  }
+    	  else{
+    		  clusters[i].push_back(Point2i(x,y));
+    	  }
       }
     }
   }
