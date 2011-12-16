@@ -26,6 +26,11 @@ void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& im
   mask_left = FGDetector_left->GetMask();
   mask_right = FGDetector_right->GetMask();
   
+  double time_s = double(time)/1000000;
+  balls.times.push_back(time_s);
+  balls.cameras_left.push_back(P_left);
+  balls.cameras_right.push_back(P_right);
+
   if(frame>=beginFrame){
     vector<Ellipse> blobs_left = getBlobs(mask_left);
     vector<Ellipse> blobs_right = getBlobs(mask_right);
@@ -33,16 +38,13 @@ void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& im
     balls.currentBlobs_left = blobs_left;
     balls.currentBlobs_right = blobs_right;
 
-    double time_s = double(time)/1000000;
-    balls.times.push_back(time_s);
-    balls.cameras_left.push_back(P_left);
-    balls.cameras_right.push_back(P_right);
+    cout << "Blobs found : " << blobs_left.size() << " and " << blobs_right.size() << endl;
 
     updateTrajectories(balls.trajectories_left,balls.times,blobs_left,frame,image_left);
     updateTrajectories(balls.trajectories_right,balls.times,blobs_right,frame,image_right);
   
-    filterTrajectories(balls.trajectories_left,balls.times,frame);
-    filterTrajectories(balls.trajectories_right,balls.times,frame);
+    //filterTrajectories(balls.trajectories_left,balls.times,frame);
+    //filterTrajectories(balls.trajectories_right,balls.times,frame);
 
     parabola = motionFilter(balls);
   }

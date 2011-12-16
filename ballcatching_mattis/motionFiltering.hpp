@@ -17,9 +17,9 @@ public:
 
   MotionFilteringParameters(){
     g = 9.81;
-    maxMeanError = 100;
+    maxMeanError = 1000;
     minToConsider = 2;
-    maxVertDistLR = 20;
+    maxVertDistLR = 50;
   }
 };
 

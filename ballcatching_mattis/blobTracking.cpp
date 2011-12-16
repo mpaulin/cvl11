@@ -98,7 +98,7 @@ void updateTrajectories(list<Balls::Trajectory>& trajs,
 					 it->getHistogram(it->length-1),
 					 image,
 					 p);
-      //cout << "confidence : " << confidence<< endl;
+      cout << "confidence : " << confidence<< endl;
       if(confidence > maxConfidence){
 	index = j;
 	maxConfidence = confidence;
