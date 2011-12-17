@@ -86,4 +86,5 @@ void BallDetector::render(Mat& image_left,Mat& image_right){
 	}
 	balls.render(image_left,image_right);
 	parabola.render(image_left,balls.cameras_left[balls.cameras_left.size()-1],Scalar(255,0,0));
+	parabola.render(image_right,balls.cameras_right[balls.cameras_right.size()-1],Scalar(255,0,0));
 }
