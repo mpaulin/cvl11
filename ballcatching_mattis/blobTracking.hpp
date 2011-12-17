@@ -31,7 +31,7 @@ public:
     lambdaTSpeed = 0.1;
     lambdaRad = 0.002;
     minConfidence = 0.1;
-    maxDist = 150;
+    maxDist = 200;
     minDist = 5;
     maxRot = 120*PI;
   }

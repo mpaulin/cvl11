@@ -12,8 +12,8 @@ public:
   int maxBlobSize;
 
   BlobDetectionParameters(){
-    minBlobSize = 1;
-    maxBlobSize = 30;
+    minBlobSize = 2;
+    maxBlobSize = 10;
   }
 };
 

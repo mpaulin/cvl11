@@ -16,10 +16,10 @@ public:
 
 
   MotionFilteringParameters(){
-    g = 9.81;
-    maxMeanError = 1000;
+    g = -9.81;
+    maxMeanError = 100000000;
     minToConsider = 2;
-    maxVertDistLR = 50;
+    maxVertDistLR = 10000;
   }
 };
 
@@ -38,6 +38,9 @@ public:
   Point2d project(const Point3d& p);
   Point3d retroProject(const Point2d& p);
   void render(Mat& image, const Mat& P);
+
+  Point3d first;
+  Point3d last;
 
 };
 
@@ -58,7 +61,7 @@ public:
   double getError();
 };
 
-Point3d triangulate(const Mat& P1, const Mat& P2, const Point3d& x1, const Point3d& x2);
+Point3d triangulate(const Mat& P1, const Mat& P2, const Point2d& x1, const Point2d& x2);
 
 Parabola motionFilter(Balls& balls,MotionFilteringParameters p = MotionFilteringParameters());
 
