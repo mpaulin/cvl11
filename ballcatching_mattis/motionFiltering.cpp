@@ -45,6 +45,7 @@ pair<double, double> linearRegression(const vector<Point2d>& points) {
 		A.at<double> (i, 0) = points[i].x;
 		A.at<double> (i, 1) = 1;
 		B.at<double> (i, 0) = points[i].y;
+		//cout << points[i].x << " " << points[i].y << endl;
 	}
 	Mat X = A.inv(DECOMP_SVD) * B;
 	double a = X.at<double> (0, 0);
@@ -68,6 +69,23 @@ Plane::Plane(const vector<Point3d>& points) {
 	b = svd.vt.at<double> (2, 1);
 	c = 0;
 	d = svd.vt.at<double> (2, 2);
+
+	//Normalize to have the same direction every time
+	a = a/d;
+	b = b/d;
+	c = c/d;
+	d = d/d;
+
+	first = points[0];
+	last = points[points.size()-1];
+	for(unsigned int i = 0;i<points.size();i++){
+		if(project(first).x < project(points[i]).x){
+			first = points[i];
+		}
+		if(project(last).x > project(points[i]).x){
+			last = points[i];
+		}
+	}
 }
 
 pair<Vec3d, Vec3d> Plane::getBase() {
@@ -95,17 +113,19 @@ Point3d Plane::retroProject(const Point2d& p) {
 }
 
 void Plane::render(Mat& image, const Mat& P) {
-	pair<Vec3d, Vec3d> base = getBase();
-	Point3d O = getOrigin();
-	Point3d i = O - 10 * Point3d(base.first);
-	Point3d j = O + 10 * Point3d(base.second);
-	renderLine(image, P, O, i, Scalar(255, 0, 255));
-	renderLine(image, P, O, j, Scalar(255, 0, 255));
-	renderPoint(image, P, retroProject(Point2d(0, 0)), Scalar(125, 0, 255));
+	first.z=0;
+	last.z = 0;
+	renderLine(image, P, retroProject(project(first)), retroProject(project(last)), Scalar(255, 0, 255));
+	pair<Vec3d, Vec3d> b = getBase();
+	Point3d p = retroProject(project(first));
+	Point3d p1(p.x+100*b.first[0],p.y+100*b.first[1],p.z+100*b.first[2]);
+	Point3d p2(p.x+100*b.second[0],p.y+100*b.second[1],p.z+100*b.second[2]);
+	renderLine(image,P,p,p1,Scalar(255,0,0));
+	renderLine(image,P,p,p2,Scalar(255,0,0));
 }
 
 Parabola::Parabola() {
-	 a=b=c=0;
+	a=b=c=0;
 }
 
 Parabola::Parabola(const vector<Point3d>& points, const vector<double>& times,
@@ -114,7 +134,7 @@ Parabola::Parabola(const vector<Point3d>& points, const vector<double>& times,
 
 	this->points = points;
 	this->times = times;
-	cout << points<< endl;
+
 	plane = Plane(points);
 
 	//Evaluate Vx0
@@ -127,19 +147,25 @@ Parabola::Parabola(const vector<Point3d>& points, const vector<double>& times,
 	double v0x = linearRegression(vx).first;
 	cout << "V0x found : " << v0x << endl;
 	vector<Point2d> pts(points.size());
-
+	cout << endl;
 	for (unsigned int i = 0; i < pts.size(); i++) {
 		Point2d p = plane.project(points[i]);
 		pts[i].x = p.x;
-		pts[i].y = p.y - g * p.x * p.x / v0x;
+		pts[i].y = p.y - g * p.x * p.x / (2*v0x);
+		cout << p.x << " " << p.y<< endl;
 	}
-
+	cout << endl;
 	pair<double, double> bc = linearRegression(pts);
 
-	a = g / v0x;
+	a = g /(2*v0x);
 	b = bc.first;
 	c = bc.second;
-
+	cout << "Evals : ";
+	for (unsigned int i = 0; i < pts.size(); i++) {
+			Point2d p = plane.project(points[i]);
+			cout << a*p.x*p.x+b*p.x+c-p.y << " " ;
+	}
+	cout << endl;
 }
 
 double Parabola::eval(double x) {
@@ -162,11 +188,12 @@ double Parabola::getError() {
 void Parabola::render(Mat& image, const Mat& P, const Scalar& col) {
 	if(a!=0){
 		plane.render(image, P);
-		double steps = 100;
-		double beg = plane.project(points[0]).x;
-		double nb = 5;
-		for (int i = 0; i < steps; i++) {
-			double x = beg - nb * i / steps;
+		double steps = 1000;
+		double beg = plane.project(plane.first).x;
+		double end = plane.project(plane.last).x;
+		cout << "Diff: " << 2*a*beg+b << " " << 2*a*end+b << endl;
+		for (int i = 0; i <= steps; i++) {
+			double x = beg + (end-beg) * i / steps;
 			Point2d po(x, eval(x));
 			Point3d X = plane.retroProject(po);
 
@@ -174,10 +201,12 @@ void Parabola::render(Mat& image, const Mat& P, const Scalar& col) {
 		}
 
 		for (vector<Point3d>::const_iterator it = points.begin(); it
-				!= points.end(); it++) {
+		!= points.end(); it++) {
 			Point3d p(it->x, it->y, 0);
 			renderPoint(image, P, p, Scalar(255, 255, 255));
 			renderPoint(image, P, *it, Scalar(125, 125, 125));
+			renderLine(image,P,p,*it,Scalar(0,0,0));
+			renderLine(image,P,p,plane.retroProject(plane.project(p)),Scalar(125,0,0));
 		}
 	}
 }
@@ -188,7 +217,7 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 	Parabola minParabola;
 	vector<bool> hasMatchedRight(balls.trajectories_right.size(), false);
 	for (list<Balls::Trajectory>::iterator it = balls.trajectories_left.begin(); it
-			!= balls.trajectories_left.end(); it++) {
+	!= balls.trajectories_left.end(); it++) {
 		if (it->length < params.minToConsider)
 			continue;
 		bool hasMatched = false;
@@ -206,20 +235,20 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 			int i2 = 0;
 
 			while (i1 < it->length && i2 < it2->length) {
-				if (abs(it->getEllipse(i1).center.y
-						- it2->getEllipse(i2).center.y)>params.maxVertDistLR) {
-					cout << "Nope : "<< abs(it->getEllipse(i1).center.y - it2->getEllipse(i2).center.y) << endl;
-					toAdd = false;
-					break;
-				}
-
 				int f1 = it->getFrame(i1);
 				int f2 = it2->getFrame(i2);
 				if (f1 == f2) {
+					if (abs(it->getEllipse(i1).center.y
+							- it2->getEllipse(i2).center.y)>params.maxVertDistLR) {
+						cout << "Nope : "<< abs(it->getEllipse(i1).center.y - it2->getEllipse(i2).center.y) << endl;
+						toAdd = false;
+						break;
+					}
 					Point3d p = triangulate(balls.cameras_left[f1],
 							balls.cameras_right[f2], it->getEllipse(i1).center,
 							it2->getEllipse(i2).center);
-
+					//Undistort manually...
+					p.y = sqrt(p.y*p.y+p.x*p.x);
 					i1++;
 					i2++;
 
@@ -240,6 +269,7 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 				Parabola p(traj, times, params.g);
 
 				double error = p.getError();
+				cout << "Error = " << error << endl;
 				if (error < params.maxMeanError){
 					trajs.push_back(Balls::Trajectory3D(traj, frames));
 					hasMatched = true;
