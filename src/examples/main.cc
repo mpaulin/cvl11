@@ -235,6 +235,7 @@ signalHandler(int signal)
 
 BallDetector ballDetector;
 StereoProc stereoProc("/home/mattis/ETHZ/CVLabs/cvl11/dataset_capture/calib_stereo_bravo_front.scf");
+//StereoProc stereoProc("/home/pixhawk/pixhawk/ai_vision/release/config/calib_stereo_bravo_front.scf");
 /**
  * @brief Handle incoming MAVLink packets containing images
  *
@@ -246,10 +247,6 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 
 	// Pointer to shared memory data
 	PxSHMImageClient* client = static_cast<PxSHMImageClient*>(user);
-
-	cv::Mat imgToSave;
-
-	//printf("GOT IMG MSG\n");
 
 	// read mono image data
 	cv::Mat img_left;
@@ -266,7 +263,7 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 
 		float roll,pitch,yaw;
 		client->getRollPitchYaw(msg,roll,pitch,yaw);
-		//yaw = yaw+PI;
+		yaw = PI/2;
 		//std::cout << "Roll: "<< roll << " Pitch: " << pitch << " Yaw: " << yaw << std::endl;
 		//Debug
 		//roll=pitch = yaw=0;
@@ -275,7 +272,7 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 		float x,y,z;
 		client->getGroundTruth(msg,x,y,z);
 		//Debug
-		//x = y = z = 0;
+		x = y = 0;
 		float ca = cos(yaw),sa = sin(yaw),cb = cos(pitch),sb = sin(pitch),cg = cos(roll),sg = sin(roll);
 		double rotMat[4][4] =
 			{{ca*cb,    ca*sb*sg-sa*cg,      ca*sb*cg+sa*sg,    1000*x},
@@ -301,8 +298,15 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 		cv::Mat P2 = stereoProc.P2*rot2*rot.inv();
 
 		ballDetector.addData(img_left_und,P1,img_right_und,P2,timestamp);
+
+
 		ballDetector.render(img_left_und,img_right_und);
-		cout << ballDetector.parabola.a << " " << ballDetector.parabola.b << " " << ballDetector.parabola.c << endl;
+
+		Point3d impact = ballDetector.predictImpact(0);
+		renderPoint(img_left_und,P1,impact,Scalar(255,0,0));
+		renderPoint(img_right_und,P2,impact,Scalar(255,0,0));
+
+		cout << "Parabola: " << ballDetector.parabola.a << " " << ballDetector.parabola.b << " " << ballDetector.parabola.c << endl;
 
 
 		//cout << stereoProc.P1 << endl;
@@ -315,7 +319,11 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 		//Mat orig = P1*Mat(4,1,CV_64F,origin);
 		//cout << orig.at<double>(0,0)/orig.at<double>(2,0) << " " <<orig.at<double>(1,0)/orig.at<double>(2,0) << endl;
 
-
+		if(ballDetector.balls.currentBlobs_left.size()>0 && ballDetector.balls.currentBlobs_right.size()>0){
+			Point2f p1 = ballDetector.balls.currentBlobs_left[0].center;
+			Point2f p2 = ballDetector.balls.currentBlobs_right[0].center;
+			renderPoint(img_left_und,P1,triangulate(P1,P2,p1,p2),Scalar(255,0,0));
+		}
 		uint64_t diff = currTime - timestamp;
 
 		if (verbose)
@@ -324,6 +332,7 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 		}
 
 		// Display if switched on
+#define NO_DISPLAY
 #ifndef NO_DISPLAY
 		if ((client->getCameraConfig() & PxSHM::CAMERA_FORWARD_LEFT) == PxSHM::CAMERA_FORWARD_LEFT)
 		{
@@ -363,13 +372,24 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 
 #endif
 #endif
-//#define DO_SAVING
+#define DO_SAVING
 #ifdef DO_SAVING
-	if(img_left_und.cols>0 && img_left_und.rows>0){
-		char index[20];
-		sprintf(index, "%04d", imageCounter++);
-		cv::imwrite(std::string(fileBaseName+index+fileExt).c_str(), img_left_und);
-	}
+		if(img_left_und.cols>0 && img_left_und.rows>0){
+			char index[20];
+			sprintf(index, "%04d", imageCounter++);
+			Mat both(img_left_und.rows,img_left_und.cols+img_right_und.cols,CV_8UC1);
+			for(int j = 0;j<img_left_und.rows;j++){
+				for(int i = 0;i<img_left_und.cols;i++){
+					both.at<unsigned char>(j,i) = img_left_und.at<unsigned char>(j,i);
+				}
+				for(int i = 0;i<img_right_und.cols;i++){
+					both.at<unsigned char>(j,img_left_und.cols+i)=img_right_und.at<unsigned char>(j,i);
+				}
+			}
+			namedWindow("BOTH");
+			imshow("BOTH",both);
+			cv::imwrite(std::string(fileBaseName+index+fileExt).c_str(), both);
+		}
 #endif
 	}
 
