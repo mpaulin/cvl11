@@ -9,6 +9,10 @@ DisjointSet::DisjointSet(int w, int h){
   pixels = vector<Pixel>(w*h);
 }
 
+DisjointSet::DisjointSet(int length){
+	pixels = vector<Pixel>(length);
+}
+
 void DisjointSet::makeSet(int x, int y){
   int index = y+height*x;
   pixels[index].index=index;

@@ -4,6 +4,8 @@
 
 #include "ballDetection.hpp"
 
+#include <sys/time.h>
+
 BallDetector::BallDetector(){
   CvGaussBGStatModelParams* params = new CvGaussBGStatModelParams;		     
   params->win_size=200;	
@@ -20,41 +22,56 @@ BallDetector::BallDetector(){
 }
 
 void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& image_right,const Mat& P_right,long int time){
+	struct timeval bchmrk;
+	FGDetector_left->Process(new IplImage(image_left));
+	FGDetector_right->Process(new IplImage(image_right));
+	gettimeofday(&bchmrk,NULL);
+	double t1 = double(bchmrk.tv_usec)/1000;
+	mask_left = FGDetector_left->GetMask();
+	mask_right = FGDetector_right->GetMask();
+	gettimeofday(&bchmrk,NULL);
+	double t2 = double(bchmrk.tv_usec)/1000;
+	double time_s = double(time)/1000000;
+	balls.times.push_back(time_s);
+	balls.cameras_left.push_back(P_left);
+	balls.cameras_right.push_back(P_right);
 
-  FGDetector_left->Process(new IplImage(image_left));
-  FGDetector_right->Process(new IplImage(image_right));
-  mask_left = FGDetector_left->GetMask();
-  mask_right = FGDetector_right->GetMask();
-  
-  double time_s = double(time)/1000000;
-  balls.times.push_back(time_s);
-  balls.cameras_left.push_back(P_left);
-  balls.cameras_right.push_back(P_right);
+	if(frame>=beginFrame){
+		vector<Ellipse> blobs_left = getBlobs(mask_left);
+		vector<Ellipse> blobs_right = getBlobs(mask_right);
+		gettimeofday(&bchmrk,NULL);
+		double t3 = double(bchmrk.tv_usec)/1000;
+		balls.currentBlobs_left = blobs_left;
+		balls.currentBlobs_right = blobs_right;
 
-  if(frame>=beginFrame){
-    vector<Ellipse> blobs_left = getBlobs(mask_left);
-    vector<Ellipse> blobs_right = getBlobs(mask_right);
+		cout << "Blobs found : " << blobs_left.size() << " and " << blobs_right.size() << endl;
 
-    balls.currentBlobs_left = blobs_left;
-    balls.currentBlobs_right = blobs_right;
+		updateTrajectories(balls.trajectories_left,balls.times,blobs_left,frame,image_left);
+		updateTrajectories(balls.trajectories_right,balls.times,blobs_right,frame,image_right);
+		gettimeofday(&bchmrk,NULL);
+		double t4 = double(bchmrk.tv_usec)/1000;
+		filterTrajectories(balls.trajectories_left,balls.times,frame);
+		filterTrajectories(balls.trajectories_right,balls.times,frame);
 
-    cout << "Blobs found : " << blobs_left.size() << " and " << blobs_right.size() << endl;
+		parabola = motionFilter(balls);
+		gettimeofday(&bchmrk,NULL);
+		double t5 = double(bchmrk.tv_usec)/1000;
 
-    updateTrajectories(balls.trajectories_left,balls.times,blobs_left,frame,image_left);
-    updateTrajectories(balls.trajectories_right,balls.times,blobs_right,frame,image_right);
-  
-    //filterTrajectories(balls.trajectories_left,balls.times,frame);
-    //filterTrajectories(balls.trajectories_right,balls.times,frame);
+		cout << "Benchmarking: All : " << t5-t1 << " | FG " << t2-t1 << " | Blobs " << t3-t2 << " | Tracking " << t4-t3 << " Parabola | " << t5-t4 << endl;
 
-    parabola = motionFilter(balls);
-  }
-  cout << "Frame " << frame << endl;
-  frame++;
+	}
+	cout << "Frame " << frame << endl;
+	frame++;
 }
 
-Point3d predictImpact(){
-  //TODO
-  return Point3d(0,0,0);
+Point3d BallDetector::predictImpact(double height){
+	const double a = parabola.a;
+	const double b = parabola.b;
+	const double c = parabola.c - height;
+	double x1 = (-b-sqrt(b*b-4*a*c))/(2*a);
+	double x2 = (-b+sqrt(b*b-4*a*c))/(2*a);
+	if((x2-x1)*parabola.v0x>0) return parabola.plane.retroProject(Point2d(x2,height));
+	else return parabola.plane.retroProject(Point2d(x1,height));
 }
 
 void BallDetector::render(Mat& image_left,Mat& image_right){

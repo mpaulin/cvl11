@@ -13,13 +13,15 @@ public:
   int minToConsider;
   //Max vertical distance between left/right matching blobs
   int maxVertDistLR;
-
+  //Multiplier for the plane projection error.
+  double lambdaPlaneError;
 
   MotionFilteringParameters(){
-    g = -9.81;
+    g = -9.81/2;
     maxMeanError = 100000000;
-    minToConsider = 2;
-    maxVertDistLR = 10000;
+    minToConsider = 3;
+    maxVertDistLR = 2;
+    lambdaPlaneError = 0.001;
   }
 };
 
@@ -53,12 +55,12 @@ public:
   double b;
   double c;
   Plane plane;
-
+  double v0x;
   Parabola();
   Parabola(const vector<Point3d>& points,const vector<double>& times,double g);
   double eval(double x);
   void render(Mat& image, const Mat& P,const Scalar& col);
-  double getError();
+  double getError(double);
 };
 
 Point3d triangulate(const Mat& P1, const Mat& P2, const Point2d& x1, const Point2d& x2);

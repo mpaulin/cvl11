@@ -144,44 +144,38 @@ Parabola::Parabola(const vector<Point3d>& points, const vector<double>& times,
 		vx[i].y = plane.project(points[i]).x;
 	}
 
-	double v0x = linearRegression(vx).first;
-	cout << "V0x found : " << v0x << endl;
+	v0x = linearRegression(vx).first;
+	//cout << "v0x found : " << v0x << endl;
 	vector<Point2d> pts(points.size());
-	cout << endl;
 	for (unsigned int i = 0; i < pts.size(); i++) {
 		Point2d p = plane.project(points[i]);
 		pts[i].x = p.x;
 		pts[i].y = p.y - g * p.x * p.x / (2*v0x);
-		cout << p.x << " " << p.y<< endl;
 	}
-	cout << endl;
 	pair<double, double> bc = linearRegression(pts);
 
 	a = g /(2*v0x);
 	b = bc.first;
 	c = bc.second;
-	cout << "Evals : ";
 	for (unsigned int i = 0; i < pts.size(); i++) {
 			Point2d p = plane.project(points[i]);
-			cout << a*p.x*p.x+b*p.x+c-p.y << " " ;
 	}
-	cout << endl;
 }
 
 double Parabola::eval(double x) {
 	return c + x * (b + x * a);
 }
 
-double Parabola::getError() {
+double Parabola::getError(double lambdaPlaneError) {
 	double error = 0;
 	for (unsigned int i = 0; i < points.size(); i++) {
 		Point2d p = plane.project(points[i]);
 		Point3d pp = plane.retroProject(p);
 		double errParabola = (eval(p.x) - p.y);
 		double errPlane = (pp.x-points[i].x)*(pp.x-points[i].x)+(pp.x-points[i].y)*(pp.x-points[i].y)+(pp.x-points[i].z)*(pp.x-points[i].z);
-		error += errParabola * errParabola + errPlane;
+		error += errParabola * errParabola + lambdaPlaneError*errPlane;
 	}
-	error = sqrt(error) / points.size();
+	error = sqrt(error) / (points.size()*points.size());
 	return error;
 }
 
@@ -191,7 +185,6 @@ void Parabola::render(Mat& image, const Mat& P, const Scalar& col) {
 		double steps = 1000;
 		double beg = plane.project(plane.first).x;
 		double end = plane.project(plane.last).x;
-		cout << "Diff: " << 2*a*beg+b << " " << 2*a*end+b << endl;
 		for (int i = 0; i <= steps; i++) {
 			double x = beg + (end-beg) * i / steps;
 			Point2d po(x, eval(x));
@@ -268,7 +261,7 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 
 				Parabola p(traj, times, params.g);
 
-				double error = p.getError();
+				double error = p.getError(params.lambdaPlaneError);
 				cout << "Error = " << error << endl;
 				if (error < params.maxMeanError){
 					trajs.push_back(Balls::Trajectory3D(traj, frames));
