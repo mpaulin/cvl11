@@ -253,7 +253,7 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 				else if (f2 < f1)
 					i2++;
 			}
-			if (toAdd) {
+			if (toAdd && traj.size()>=params.minToConsider) {
 				vector<double> times(frames.size());
 				for (unsigned int i = 0; i < frames.size(); i++) {
 					times[i] = balls.times[frames[i]];

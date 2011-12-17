@@ -5,13 +5,13 @@
 
 class TrajectoryFilteringParameters{
 public:
-  //Number of frames after which a trajectory is considered lost. 
+  //time (in milli) after which a trajectory is considered lost.
   int loosingFrames;
   //Max numer of frame per trajectory
   int maxFramePerTrajectory;
 
   TrajectoryFilteringParameters(){
-    loosingFrames = 4;
+    loosingFrames = 3;
     maxFramePerTrajectory = 50;
   }
 };

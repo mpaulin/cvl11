@@ -44,7 +44,9 @@ void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& im
 		balls.currentBlobs_left = blobs_left;
 		balls.currentBlobs_right = blobs_right;
 
-		cout << "Blobs found : " << blobs_left.size() << " and " << blobs_right.size() << endl;
+		cout << "Blobs found : " << blobs_left.size() << " and " << blobs_right.size() << " ";
+		cout << "Trajectories left :" << balls.trajectories_left.size() << " ";
+		cout << "Trajectories right :" << balls.trajectories_right.size() << endl;
 
 		updateTrajectories(balls.trajectories_left,balls.times,blobs_left,frame,image_left);
 		updateTrajectories(balls.trajectories_right,balls.times,blobs_right,frame,image_right);
