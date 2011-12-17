@@ -60,6 +60,7 @@ static GString* configFile = g_string_new("conf/abc.cfg");
 
 int imageCounter = 0;
 std::string fileBaseName("/home/mattis/ETHZ/CVLabs/cvl11/tmp/frame");
+//std::string fileBaseName("/home/pixhawk/cvl/mattis/tmp/frame");
 std::string fileExt(".png");
 
 bool quit = false;
