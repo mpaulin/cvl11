@@ -2,6 +2,62 @@
 
 #include <sys/time.h>
 
+#if 1
+unordered_map<int,vector<Point2i> > cluster(const Mat& image){
+	struct timeval tv;
+	gettimeofday(&tv,NULL);
+	double t0 = double(tv.tv_usec)/1000;
+	unordered_map<int,int> fg;
+	int nFG = 0;
+	for(int y = 0; y < image.rows; y++){
+		const unsigned char* My = image.ptr<unsigned char>(y);
+		for(int x = 0; x < image.cols; x++){
+			if(My[x]!=0)
+				fg.insert(pair<int,int>(y+image.rows*x,nFG++));
+		}
+	}
+
+	gettimeofday(&tv,NULL);
+	double t1 = double(tv.tv_usec)/1000;
+	DisjointSet disjointSet(nFG);
+	gettimeofday(&tv,NULL);
+	double t2 = double(tv.tv_usec)/1000;
+	for(unordered_map<int,int>::const_iterator it = fg.begin();it!=fg.end();++it){
+		int y = it->first % image.rows;
+		int x = it->first / image.rows;
+		if(x>0){
+			int left = y+image.rows*(x-1);
+			if(fg.count(left)){
+				disjointSet.unite(it->second,fg[left]);
+			}
+		}
+		if(y>0){
+			int up = y-1+image.rows*x;
+			if(fg.count(up)){
+				disjointSet.unite(it->second,fg[up]);
+			}
+		}
+	}
+	gettimeofday(&tv,NULL);
+	double t3 = double(tv.tv_usec)/1000;
+	unordered_map<int,vector<Point2i> > clusters;
+	for(unordered_map<int,int>::const_iterator it = fg.begin();it!=fg.end();++it){
+		int i = disjointSet.find(it->second);
+		int y = it->first % image.rows;
+		int x = it->first / image.rows;
+		if(!clusters.count(i)){
+			clusters.insert(pair<int,vector<Point2i> >(i,vector<Point2i>(1,Point2i(x,y))));
+		}
+		else{
+			clusters[i].push_back(Point2i(x,y));
+		}
+	}
+	gettimeofday(&tv,NULL);
+	double t4 = double(tv.tv_usec)/1000;
+	cout << "Benchmark blobs : All " << t4-t0 << " | Fg " << t1-t0 << " | Creation " << t2-t1 << " | CC : " << t3-t2 << " | Parents " << t4-t3 << endl;
+	return clusters;
+}
+#else
 unordered_map<int,vector<Point2i> > cluster(const Mat& image){
 	struct timeval tv;
 	gettimeofday(&tv,NULL);
@@ -33,7 +89,7 @@ unordered_map<int,vector<Point2i> > cluster(const Mat& image){
 		for(int x = 0;x<image.cols;x++){
 			if(My[x]!=0){
 				Pixel p = disjointSet.find(x,y);
-				int i = p.parent;
+				int i = p.index;
 				if(!clusters.count(i)){
 					clusters.insert(pair<int,vector<Point2i> >(i,vector<Point2i>(1,Point2i(x,y))));
 				}
@@ -49,6 +105,7 @@ unordered_map<int,vector<Point2i> > cluster(const Mat& image){
 	return clusters;
 
 }
+#endif
 
 
 Mat clustersToImage(const unordered_map<int,vector<Point2i> >& clusters, int width,int height){
