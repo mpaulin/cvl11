@@ -56,6 +56,11 @@ int compid = 112;
 bool verbose = false;
 bool debug = 0;
 
+struct United{
+	lcm_t* lcm;
+	PxSHMImageClient* client;
+};
+
 static GString* configFile = g_string_new("conf/abc.cfg");
 
 int imageCounter = 0;
@@ -235,7 +240,7 @@ signalHandler(int signal)
 }
 
 BallDetector ballDetector;
-StereoProc stereoProc("/home/mattis/ETHZ/CVLabs/cvl11/dataset_capture/calib_stereo_bravo_front.scf");
+StereoProc stereoProc("/home/mattis/ETHZ/CVLabs/cvl11/dataset_capture/calib_stereo_bravo_firefly.scf");
 //StereoProc stereoProc("/home/pixhawk/pixhawk/ai_vision/release/config/calib_stereo_bravo_front.scf");
 /**
  * @brief Handle incoming MAVLink packets containing images
@@ -246,8 +251,11 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 {
 	const mavlink_message_t* msg = getMAVLinkMsgPtr(container);
 
+	struct United* united = static_cast<struct United*>(user);
+
 	// Pointer to shared memory data
-	PxSHMImageClient* client = static_cast<PxSHMImageClient*>(user);
+	//PxSHMImageClient* client = static_cast<PxSHMImageClient*>(user);
+	PxSHMImageClient* client = united->client;
 
 	// read mono image data
 	cv::Mat img_left;
@@ -302,6 +310,7 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 
 
 		ballDetector.render(img_left_und,img_right_und);
+		//ballDetector.render(ballDetector.mask_left,img_right_und);
 
 		Point3d impact = ballDetector.predictImpact(0);
 		renderPoint(img_left_und,P1,impact,Scalar(255,0,0));
@@ -375,22 +384,34 @@ void imageHandler(const lcm_recv_buf_t* rbuf, const char* channel,
 #endif
 #define DO_SAVING
 #ifdef DO_SAVING
+#if 0
 		if(img_left_und.cols>0 && img_left_und.rows>0){
 			char index[20];
 			sprintf(index, "%04d", imageCounter++);
-			Mat both(img_left_und.rows,img_left_und.cols+img_right_und.cols,CV_8UC1);
+			Mat both(img_left_und.rows,img_left_und.cols+img_right_und.cols,CV_32FC3);
 			for(int j = 0;j<img_left_und.rows;j++){
 				for(int i = 0;i<img_left_und.cols;i++){
-					both.at<unsigned char>(j,i) = img_left_und.at<unsigned char>(j,i);
+					unsigned char grey = img_left_und.at<unsigned char>(j,i);
+					bool bg = ballDetector.mask_left.at<unsigned char>(j,i)==0;
+					both.at<Vec3f>(j,i) = Vec3f(grey*bg,grey*bg,grey);
 				}
 				for(int i = 0;i<img_right_und.cols;i++){
-					both.at<unsigned char>(j,img_left_und.cols+i)=img_right_und.at<unsigned char>(j,i);
+					unsigned char grey = img_right_und.at<unsigned char>(j,i);
+					bool bg = ballDetector.mask_right.at<unsigned char>(j,i)==0;
+					both.at<Vec3f>(j,i+img_left_und.cols) = Vec3f(grey*bg,grey*bg,grey);
 				}
 			}
 			namedWindow("BOTH");
 			imshow("BOTH",both);
 			cv::imwrite(std::string(fileBaseName+index+fileExt).c_str(), both);
 		}
+#else
+    if(img_left_und.cols>0 && img_left_und.rows>0){
+        char index[20];
+        sprintf(index, "%04d", imageCounter++);
+        cv::imwrite(std::string(fileBaseName+index+fileExt).c_str(), img_left_und /*ballDetector.mask_left*/);
+    }
+#endif
 #endif
 	}
 
@@ -513,7 +534,10 @@ int main(int argc, char* argv[])
 	fprintf(stderr, "# INFO: Image client ready, waiting for images..\n");
 
 	// Subscribe to MAVLink messages on the image channel
-	mavconn_mavlink_msg_container_t_subscription_t* imgSub = mavconn_mavlink_msg_container_t_subscribe(lcm, MAVLINK_IMAGES, &imageHandler, &client);
+	struct United united;
+	united.client = &client;
+	united.lcm = lcm;
+	mavconn_mavlink_msg_container_t_subscription_t* imgSub = mavconn_mavlink_msg_container_t_subscribe(lcm, MAVLINK_IMAGES, &imageHandler, &united);
 
 	signal(SIGINT, signalHandler);
 
