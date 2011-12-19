@@ -209,6 +209,7 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 	double minError = 10000000;
 	Parabola minParabola;
 	vector<bool> hasMatchedRight(balls.trajectories_right.size(), false);
+	vector<list<Balls::Trajectory>::iterator > toRemove_left;
 	for (list<Balls::Trajectory>::iterator it = balls.trajectories_left.begin(); it
 	!= balls.trajectories_left.end(); it++) {
 		if (it->length < params.minToConsider)
@@ -274,6 +275,20 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 				}
 			}
 		}
+		if(!hasMatched){
+			toRemove_left.push_back(it);
+		}
+	}
+	int iRight = 0;
+	for(list<Balls::Trajectory>::iterator it2 =
+				balls.trajectories_right.begin(); it2
+				!= balls.trajectories_right.end(); it2++){
+		if(!hasMatchedRight[iRight++]){
+			balls.trajectories_right.erase(it2);
+		}
+	}
+	for(unsigned int i = 0;i<toRemove_left.size();i++){
+		balls.trajectories_left.erase(toRemove_left[i]);
 	}
 
 	balls.trajectories3D = trajs;
