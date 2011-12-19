@@ -34,6 +34,7 @@ public:
   int height;
   DisjointSet(int w,int h);
   DisjointSet(int);
+  void makeSet(int k);
   void makeSet(int x, int y);
   int find(int);
   void unite(int p1, int p2);

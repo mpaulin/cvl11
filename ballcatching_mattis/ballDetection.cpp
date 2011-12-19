@@ -23,12 +23,12 @@ BallDetector::BallDetector(){
 
 void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& image_right,const Mat& P_right,long int time){
 	struct timeval bchmrk;
-	FGDetector_left->Process(new IplImage(image_left));
-	FGDetector_right->Process(new IplImage(image_right));
 	gettimeofday(&bchmrk,NULL);
 	double t1 = double(bchmrk.tv_usec)/1000;
-	mask_left = FGDetector_left->GetMask();
-	mask_right = FGDetector_right->GetMask();
+	FGDetector_left->Process(new IplImage(image_left));
+	FGDetector_right->Process(new IplImage(image_right));
+	mask_left = cvarrToMat(FGDetector_left->GetMask());
+	mask_right = cvarrToMat(FGDetector_right->GetMask());
 	gettimeofday(&bchmrk,NULL);
 	double t2 = double(bchmrk.tv_usec)/1000;
 	double time_s = double(time)/1000000;
@@ -37,19 +37,17 @@ void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& im
 	balls.cameras_right.push_back(P_right);
 
 	if(frame>=beginFrame){
-		vector<Ellipse> blobs_left = getBlobs(mask_left);
-		vector<Ellipse> blobs_right = getBlobs(mask_right);
+		balls.currentBlobs_left = getBlobs(mask_left);
+		balls.currentBlobs_right = getBlobs(mask_right);
 		gettimeofday(&bchmrk,NULL);
 		double t3 = double(bchmrk.tv_usec)/1000;
-		balls.currentBlobs_left = blobs_left;
-		balls.currentBlobs_right = blobs_right;
 
-		cout << "Blobs found : " << blobs_left.size() << " and " << blobs_right.size() << " ";
+		cout << "Blobs found : " << balls.currentBlobs_left.size() << " and " << balls.currentBlobs_right.size() << " ";
 		cout << "Trajectories left :" << balls.trajectories_left.size() << " ";
 		cout << "Trajectories right :" << balls.trajectories_right.size() << endl;
 
-		updateTrajectories(balls.trajectories_left,balls.times,blobs_left,frame,image_left);
-		updateTrajectories(balls.trajectories_right,balls.times,blobs_right,frame,image_right);
+		updateTrajectories(balls.trajectories_left,balls.times,balls.currentBlobs_left,frame,image_left);
+		updateTrajectories(balls.trajectories_right,balls.times,balls.currentBlobs_right,frame,image_right);
 		gettimeofday(&bchmrk,NULL);
 		double t4 = double(bchmrk.tv_usec)/1000;
 		filterTrajectories(balls.trajectories_left,balls.times,frame);
@@ -62,6 +60,7 @@ void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& im
 		cout << "Benchmarking: All : " << t5-t1 << " | FG " << t2-t1 << " | Blobs " << t3-t2 << " | Tracking " << t4-t3 << " Parabola | " << t5-t4 << endl;
 
 	}
+	cout << endl;
 	cout << "Frame " << frame << endl;
 	frame++;
 }

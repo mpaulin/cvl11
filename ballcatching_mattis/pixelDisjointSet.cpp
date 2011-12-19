@@ -13,6 +13,12 @@ DisjointSet::DisjointSet(int length){
 	pixels = vector<Pixel>(length);
 }
 
+void DisjointSet::makeSet(int v){
+	pixels[v].index = v;
+	pixels[v].parent = v;
+	pixels[v].rank=0;
+}
+
 void DisjointSet::makeSet(int x, int y){
   int index = y+height*x;
   pixels[index].index=index;

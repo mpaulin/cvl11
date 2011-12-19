@@ -233,7 +233,7 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 				if (f1 == f2) {
 					if (abs(it->getEllipse(i1).center.y
 							- it2->getEllipse(i2).center.y)>params.maxVertDistLR) {
-						cout << "Nope : "<< abs(it->getEllipse(i1).center.y - it2->getEllipse(i2).center.y) << endl;
+						//cout << "Nope : "<< abs(it->getEllipse(i1).center.y - it2->getEllipse(i2).center.y) << endl;
 						toAdd = false;
 						break;
 					}
@@ -241,7 +241,7 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 							balls.cameras_right[f2], it->getEllipse(i1).center,
 							it2->getEllipse(i2).center);
 					//Undistort manually...
-					p.y = sqrt(p.y*p.y+p.x*p.x);
+					//p.y = sqrt(p.y*p.y+p.x*p.x);
 					i1++;
 					i2++;
 
@@ -262,7 +262,7 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 				Parabola p(traj, times, params.g);
 
 				double error = p.getError(params.lambdaPlaneError);
-				cout << "Error = " << error << endl;
+				//cout << "Error = " << error << endl;
 				if (error < params.maxMeanError){
 					trajs.push_back(Balls::Trajectory3D(traj, frames));
 					hasMatched = true;

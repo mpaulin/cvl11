@@ -12,19 +12,19 @@ public:
   int maxBlobSize;
 
   BlobDetectionParameters(){
-    minBlobSize = 1;
-    maxBlobSize = 15;
+    minBlobSize = 2;
+    maxBlobSize = 50;
   }
 };
 
 unordered_map<int,vector<Point2i> > cluster(const Mat& image);
-Mat clustersToImage(const map<int,vector<Point2i> >& clusters, int width,int height);
+Mat clustersToImage(const unordered_map<int,vector<Point2i> >& clusters, int width,int height);
 vector<Mat> clustersAsMats(const unordered_map<int,vector<Point2i> >& clusters);
-vector<Point2i> getCenters(const vector<Mat>& clusters);
-vector<Ellipse> getBlobs(const map<int,vector<Point2i> >& clusters,BlobDetectionParameters p = BlobDetectionParameters());
+vector<Point2f> getCenters(const vector<Mat>& clusters);
+vector<Ellipse> getBlobs(const map<int,vector<Point2i> >& clusters,const BlobDetectionParameters& p = BlobDetectionParameters());
 
 /** Complete detection**/
-vector<Ellipse> getBlobs(const Mat& image,BlobDetectionParameters p = BlobDetectionParameters());
+vector<Ellipse> getBlobs(const Mat& image,const BlobDetectionParameters& p = BlobDetectionParameters());
 
 
 
