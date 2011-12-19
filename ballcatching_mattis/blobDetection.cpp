@@ -54,7 +54,6 @@ unordered_map<int,vector<Point2i> > cluster(const Mat& image){
 		int y = it->first % image.rows;
 		int x = it->first / image.rows;
 		if(!clusters.count(i)){
-			cout << "Cluster " << i << endl;
 			clusters.insert(pair<int,vector<Point2i> >(i,vector<Point2i>(1,Point2i(x,y))));
 		}
 		else{
@@ -63,7 +62,7 @@ unordered_map<int,vector<Point2i> > cluster(const Mat& image){
 	}
 	gettimeofday(&tv,NULL);
 	double t4 = double(tv.tv_usec)/1000;
-	cout << "Benchmark blobs : All " << t4-t0 << " | Fg " << t1-t0 << " | Creation " << t2-t1 << " | CC : " << t3-t2 << " | Parents " << t4-t3 << endl;
+	//cout << "Benchmark blobs : All " << t4-t0 << " | Fg " << t1-t0 << " | Creation " << t2-t1 << " | CC : " << t3-t2 << " | Parents " << t4-t3 << endl;
 
 	//char name[1000];
 	//sprintf(name,"/home/mattis/ETHZ/CVLabs/cvl11/tmp/cluters%04d.png",f++);
@@ -152,7 +151,6 @@ vector<Ellipse> getBlobs(const unordered_map<int,vector<Point2i> >& clusters,con
 #else
 vector<Ellipse> getBlobs(const unordered_map<int,vector<Point2i> >& clusters,const BlobDetectionParameters& p){
 	vector<Ellipse> blobs;
-	cout << clusters.size() << endl;
 	for(unordered_map<int,vector<Point2i> >::const_iterator it = clusters.begin();it != clusters.end();it++){
 		float radius;
 		Point2f center;
@@ -160,9 +158,7 @@ vector<Ellipse> getBlobs(const unordered_map<int,vector<Point2i> >& clusters,con
 		if(radius>p.minBlobSize && radius < p.maxBlobSize){
 			blobs.push_back(Ellipse(center,radius,radius,0));
 		}
-		cout << radius << endl;
 	}
-	cout << blobs.size()<< endl;
 	return blobs;
 }
 #endif
