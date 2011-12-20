@@ -15,13 +15,17 @@ public:
   int maxVertDistLR;
   //Multiplier for the plane projection error.
   double lambdaPlaneError;
+  //Max distance between blobs to match
+  double maxDist;
+
 
   MotionFilteringParameters(){
     g = -9.81/2;
-    maxMeanError = 100000000;
-    minToConsider = 2;
+    maxMeanError = 40;
+    minToConsider = 3;
     maxVertDistLR = 2;
     lambdaPlaneError = 0.001;
+    maxDist = 2000;
   }
 };
 
@@ -43,7 +47,6 @@ public:
 
   Point3d first;
   Point3d last;
-
 };
 
 class Parabola{
@@ -60,10 +63,8 @@ public:
   Parabola(const vector<Point3d>& points,const vector<double>& times,double g);
   double eval(double x);
   void render(Mat& image, const Mat& P,const Scalar& col);
-  double getError(double);
+  double getError(const MotionFilteringParameters& params);
 };
-
-Point3d triangulate(const Mat& P1, const Mat& P2, const Point2d& x1, const Point2d& x2);
 
 Parabola motionFilter(Balls& balls,MotionFilteringParameters p = MotionFilteringParameters());
 

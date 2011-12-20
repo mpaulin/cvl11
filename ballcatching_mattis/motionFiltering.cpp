@@ -1,42 +1,6 @@
 #include "motionFiltering.hpp"
 
-Point3d triangulate(const Mat& P1, const Mat& P2, const Point2d& x1,
-		const Point2d& x2) {
 
-	Mat A(6, 6, CV_64F);
-	for (int i = 0; i < 3; i++) {
-		for (int j = 0; j < 4; j++) {
-			A.at<double> (i, j) = P1.at<double> (i, j);
-			A.at<double> (i + 3, j) = P2.at<double> (i, j);
-		}
-	}
-
-	A.at<double> (0, 4) = -x1.x;
-	A.at<double> (1, 4) = -x1.y;
-	A.at<double> (2, 4) = -1;
-
-	A.at<double> (3, 5) = -x2.x;
-	A.at<double> (4, 5) = -x2.y;
-	A.at<double> (5, 5) = -1;
-
-	A.at<double> (3, 4) = 0;
-	A.at<double> (4, 4) = 0;
-	A.at<double> (5, 4) = 0;
-	A.at<double> (0, 5) = 0;
-	A.at<double> (1, 5) = 0;
-	A.at<double> (2, 5) = 0;
-
-
-	SVD svd(A);
-
-	Point3d X;
-
-	X.x = svd.vt.at<double> (5, 0) / svd.vt.at<double> (5, 3);
-	X.y = svd.vt.at<double> (5, 1) / svd.vt.at<double> (5, 3);
-	X.z = svd.vt.at<double> (5, 2) / svd.vt.at<double> (5, 3);
-
-	return X;
-}
 
 pair<double, double> linearRegression(const vector<Point2d>& points) {
 	Mat A(points.size(), 2, CV_64F);
@@ -166,14 +130,15 @@ double Parabola::eval(double x) {
 	return c + x * (b + x * a);
 }
 
-double Parabola::getError(double lambdaPlaneError) {
+double Parabola::getError(const MotionFilteringParameters& params) {
+	if(a==0) return 10000000;
 	double error = 0;
 	for (unsigned int i = 0; i < points.size(); i++) {
 		Point2d p = plane.project(points[i]);
 		Point3d pp = plane.retroProject(p);
 		double errParabola = (eval(p.x) - p.y);
 		double errPlane = (pp.x-points[i].x)*(pp.x-points[i].x)+(pp.x-points[i].y)*(pp.x-points[i].y)+(pp.x-points[i].z)*(pp.x-points[i].z);
-		error += errParabola * errParabola + lambdaPlaneError*errPlane;
+		error += errParabola * errParabola + params.lambdaPlaneError*errPlane;
 	}
 	error = sqrt(error) / (points.size()*points.size());
 	return error;
@@ -203,7 +168,63 @@ void Parabola::render(Mat& image, const Mat& P, const Scalar& col) {
 		}
 	}
 }
+#ifdef MOTION_FIRST
+Parabola motionFilter(Balls& balls, MotionFilteringParameters params){
+	Parabola bestParabola;
+	double bestError = 1000000;
+	//Try to match new points with old trajectories
+	vector<Balls::Trajectory> toAdd;
+	for(list<Balls::Trajectory>::iterator it = balls.trajectories.begin();
+			it!=balls.trajectories.end();
+			it++){
+		vector<double> times(it->length);
+		for (int i = 0; i < it->length; i++) {
+			times[i] = balls.times[it->getFrame(i)];
+		}
+		if(it->length>=params.minToConsider){
+			Parabola ref(it->getPoints(),times,params.g);
+			double refError =ref.getError(params);
+			if(refError < bestError){
+				bestError = refError;
+				bestParabola = ref;
+			}
+		}
+		times.push_back(balls.times[balls.currentFrame]);
+		for(unsigned int i = 0;i<balls.currentPoints.size();i++){
+			Point3d d = balls.currentPoints[i]-it->getPoint(it->length-1);
+			if(d.x*d.x+d.y*d.y<params.maxDist*params.maxDist){
+				it->addPoint(balls.currentPoints[i],balls.currentFrame);
+				if(it->length >= params.minToConsider){
+					Parabola parabola(it->getPoints(),times,params.g);
+					double error = parabola.getError(params);
+					//cout << error << endl;
+					if(error < params.maxMeanError){
+						toAdd.push_back(it->copy());
+					}
+					if(error<bestError){
+						bestError = error;
+						bestParabola = parabola;
+					}
+				}
+				else{
+					toAdd.push_back(it->copy());
+				}
+				it->pop();
+			}
+		}
 
+	}
+	for(unsigned int i = 0;i<toAdd.size();i++){
+		balls.trajectories.push_back(toAdd[i]);
+	}
+	for(unsigned int i = 0;i<balls.currentPoints.size();i++){
+		Balls::Trajectory t;
+		t.addPoint(balls.currentPoints[i],balls.currentFrame);
+		balls.trajectories.push_back(t);
+	}
+	return bestParabola;
+}
+#else
 Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 	list<Balls::Trajectory3D> trajs;
 	double minError = 10000000;
@@ -294,3 +315,4 @@ Parabola motionFilter(Balls& balls, MotionFilteringParameters params) {
 	balls.trajectories3D = trajs;
 	return minParabola;
 }
+#endif

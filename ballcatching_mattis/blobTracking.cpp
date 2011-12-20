@@ -1,7 +1,7 @@
 #include "blobTracking.hpp"
 
 
-
+#ifndef MOTION_FIRST
 double evalConfidence(const Ellipse& e1,
 		double t1,
 		const Ellipse& e2,
@@ -109,3 +109,4 @@ void updateTrajectories(list<Balls::Trajectory>& trajs,
 		}
 	}
 }
+#endif

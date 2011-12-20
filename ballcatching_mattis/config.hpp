@@ -46,7 +46,83 @@ public:
     ellipse(image,center,Size(a,b),theta,0,360,Scalar(255,0,0));
   }
 };
- 
+
+
+void renderPoint(Mat& image, const Mat& P,const Point3d& X, const Scalar& col);
+
+void renderLine(Mat& image, const Mat& P,const Point3d& X1,const Point3d& X2, const Scalar& col);
+
+vector<double> getHistogram(const Ellipse&, const Mat&, int);
+
+Point3d triangulate(const Mat& P1, const Mat& P2, const Point2d& x1, const Point2d& x2);
+
+#define MOTION_FIRST
+
+#ifdef MOTION_FIRST
+class Balls{
+public:
+	class Trajectory{
+	public:
+		int length;
+		Trajectory(){
+			length = 0;
+		}
+		Point3d getPoint(int i) const{
+			return points[i];
+		}
+
+		int getFrame(int i) const{
+			return frames[i];
+		}
+
+		void addPoint(const Point3d& point, int frame){
+			points.push_back(point);
+			frames.push_back(frame);
+			length++;
+		}
+
+		Trajectory copy() const{
+			Trajectory t;
+			t.points = points;
+			t.frames = frames;
+			t.length = length;
+			return t;
+		}
+
+		void pop(){
+			points.pop_back();
+			frames.pop_back();
+			length--;
+		}
+
+		vector<Point3d> getPoints() const{
+			return points;
+		}
+
+		void render(Mat& image, const Mat& P) const{
+			for(int i = 0;i<length-1;i++){
+				renderPoint(image,P,getPoint(i),Scalar(125,255,255));
+				renderLine(image,P,getPoint(i),getPoint(i+1),Scalar(0,0,0));
+			}
+		}
+
+	private:
+		vector<Point3d> points;
+		vector<int> frames;
+	};
+
+	list<Trajectory> trajectories;
+	vector<double> times;
+	vector<Point3d> currentPoints;
+	vector<Ellipse> currentBlobs_left;
+	vector<Ellipse> currentBlobs_right;
+	Mat currentCamera_left;
+	Mat currentCamera_right;
+	int currentFrame;
+
+	void render(Mat&, Mat&);
+};
+#else
 class Balls{
 public:
   class Trajectory{
@@ -103,11 +179,7 @@ public:
 
   void render(Mat&, Mat&);
 };
+#endif
 
-void renderPoint(Mat& image, const Mat& P,const Point3d& X, const Scalar& col);
-
-void renderLine(Mat& image, const Mat& P,const Point3d& X1,const Point3d& X2, const Scalar& col);
-
-vector<double> getHistogram(const Ellipse&, const Mat&, int);
 
 #endif

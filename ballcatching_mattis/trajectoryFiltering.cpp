@@ -1,5 +1,6 @@
 #include "trajectoryFiltering.hpp"
 
+
 void filterTrajectories(list<Balls::Trajectory>& trajectories,
 		const vector<double>& times,
 		int frame,

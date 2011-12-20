@@ -1,6 +1,7 @@
 #include "blobDetection.hpp"
 #include "blobTracking.hpp"
 #include "trajectoryFiltering.hpp"
+#include "blob3dMatching.hpp"
 
 #include "ballDetection.hpp"
 
@@ -21,6 +22,41 @@ BallDetector::BallDetector(){
   beginFrame = 2;
 }
 
+
+#ifdef MOTION_FIRST
+
+void BallDetector::addData(const Mat& image_left,const Mat& P_left, const Mat& image_right, const Mat& P_right, long time){
+	FGDetector_left->Process(new IplImage(image_left));
+	FGDetector_right->Process(new IplImage(image_right));
+	mask_left = cvarrToMat(FGDetector_left->GetMask());
+	mask_right = cvarrToMat(FGDetector_right->GetMask());
+	double time_s = double(time)/1000000;
+	balls.times.push_back(time_s);
+	balls.currentCamera_left = P_left;
+	balls.currentCamera_right = P_right;
+	balls.currentFrame = frame;
+	cout << endl;
+	cout << "Frame " << frame << endl;
+	if(frame>=beginFrame){
+		balls.currentBlobs_left = getBlobs(mask_left);
+		balls.currentBlobs_right = getBlobs(mask_right);
+
+		cout << "Blobs found : " << balls.currentBlobs_left.size() << " and " << balls.currentBlobs_right.size() << endl;
+
+		balls.currentPoints = triangulate(balls.currentBlobs_left,balls.currentBlobs_right,P_left,P_right);
+
+		cout << "Actually relevant points found: " << balls.currentPoints.size() << endl;
+
+		parabola = motionFilter(balls);
+
+		cout << "Trajectories: " << balls.trajectories.size() << endl;
+
+		filterTrajectories(balls.trajectories,balls.times,balls.currentFrame);
+	}
+	frame++;
+}
+
+#else
 void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& image_right,const Mat& P_right,long int time){
 	struct timeval bchmrk;
 	gettimeofday(&bchmrk,NULL);
@@ -64,6 +100,7 @@ void BallDetector::addData(const Mat& image_left,const Mat& P_left,const Mat& im
 	cout << "Frame " << frame << endl;
 	frame++;
 }
+#endif
 
 Point3d BallDetector::predictImpact(double height){
 	const double a = parabola.a;
@@ -84,6 +121,6 @@ void BallDetector::render(Mat& image_left,Mat& image_right){
 			ellipse(image_right,it->center,Size(it->a,it->b),it->theta,0,360,Scalar(255,255,0));
 	}
 	balls.render(image_left,image_right);
-	parabola.render(image_left,balls.cameras_left[balls.cameras_left.size()-1],Scalar(255,0,0));
-	parabola.render(image_right,balls.cameras_right[balls.cameras_right.size()-1],Scalar(255,0,0));
+	parabola.render(image_left,balls.currentCamera_left,Scalar(255,0,0));
+	parabola.render(image_right,balls.currentCamera_right,Scalar(255,0,0));
 }

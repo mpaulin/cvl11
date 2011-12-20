@@ -22,7 +22,23 @@ void renderLine(Mat& image, const Mat& P,const Point3d& X1,const Point3d& X2, co
   line(image,pp1,pp2,col);
 }
 
+#ifdef MOTION_FIRST
+void Balls::render(Mat& image_left, Mat& image_right){
+	for(list<Balls::Trajectory>::const_iterator it = trajectories.begin();it!=trajectories.end();++it){
+		it->render(image_left,currentCamera_left);
+		it->render(image_right,currentCamera_right);
+	}
+	for(unsigned int i = 0; i<currentBlobs_left.size();i++){
+		Ellipse blob = currentBlobs_left[i];
+		ellipse(image_left,blob.center,Size(blob.a,blob.b),blob.theta,0,360,Scalar(255,0,0));
+	}
 
+	for(unsigned int i = 0; i<currentBlobs_right.size();i++){
+		Ellipse blob = currentBlobs_right[i];
+		ellipse(image_right,blob.center,Size(blob.a,blob.b),blob.theta,0,360,Scalar(255,0,0));
+	}
+}
+#else
 void Balls::render(Mat& image_left, Mat& image_right){
   for(list<Trajectory>::const_iterator it = trajectories_left.begin();it!=trajectories_left.end();it++){
     for(int j = 0;j<it->length-1;j++){
@@ -44,6 +60,7 @@ void Balls::render(Mat& image_left, Mat& image_right){
     ellipse(image_right,blob.center,Size(blob.a,blob.b),blob.theta,0,360,Scalar(255,0,0));
   }
 }
+#endif
 
 vector<double> getHistogram(const Ellipse & ellipse,const Mat& image,int nBins){
   
@@ -81,4 +98,44 @@ vector<double> getHistogram(const Ellipse & ellipse,const Mat& image,int nBins){
   cout << " --------- " << endl;
   */
   return histo;
+}
+
+Point3d triangulate(const Mat& P1,
+					const Mat& P2,
+					const Point2d& x1,
+					const Point2d& x2) {
+
+	Mat A(6, 6, CV_64F);
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 4; j++) {
+			A.at<double> (i, j) = P1.at<double> (i, j);
+			A.at<double> (i + 3, j) = P2.at<double> (i, j);
+		}
+	}
+
+	A.at<double> (0, 4) = -x1.x;
+	A.at<double> (1, 4) = -x1.y;
+	A.at<double> (2, 4) = -1;
+
+	A.at<double> (3, 5) = -x2.x;
+	A.at<double> (4, 5) = -x2.y;
+	A.at<double> (5, 5) = -1;
+
+	A.at<double> (3, 4) = 0;
+	A.at<double> (4, 4) = 0;
+	A.at<double> (5, 4) = 0;
+	A.at<double> (0, 5) = 0;
+	A.at<double> (1, 5) = 0;
+	A.at<double> (2, 5) = 0;
+
+
+	SVD svd(A);
+
+	Point3d X;
+
+	X.x = svd.vt.at<double> (5, 0) / svd.vt.at<double> (5, 3);
+	X.y = svd.vt.at<double> (5, 1) / svd.vt.at<double> (5, 3);
+	X.z = svd.vt.at<double> (5, 2) / svd.vt.at<double> (5, 3);
+
+	return X;
 }
