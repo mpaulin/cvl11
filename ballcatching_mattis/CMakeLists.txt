@@ -1,1 +1,1 @@
-ADD_LIBRARY(BallDetection ballDetection blobTracking blobDetection config pixelDisjointSet motionFiltering trajectoryFiltering)
+ADD_LIBRARY(BallDetection ballDetection blobTracking blobDetection config pixelDisjointSet motionFiltering trajectoryFiltering blob3dMatching)
