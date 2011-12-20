@@ -37,6 +37,10 @@ void Balls::render(Mat& image_left, Mat& image_right){
 		Ellipse blob = currentBlobs_right[i];
 		ellipse(image_right,blob.center,Size(blob.a,blob.b),blob.theta,0,360,Scalar(255,0,0));
 	}
+
+	for(unsigned int i = 0; i<currentPoints.size();i++){
+			renderLine(image_left,currentCamera_left,currentPoints[i],Point3d(currentPoints[i].x,currentPoints[i].y,0),Scalar(255,255,255));
+	}
 }
 #else
 void Balls::render(Mat& image_left, Mat& image_right){
