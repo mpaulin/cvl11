@@ -102,9 +102,12 @@ vector<double> getHistogram(const Ellipse & ellipse,const Mat& image,int nBins){
 
 Point3d triangulate(const Mat& P1,
 					const Mat& P2,
-					const Point2d& x1,
-					const Point2d& x2) {
+					const Point2d& p1,
+					const Point2d& p2) {
 
+	double midY = (p1.y+p2.y)/2;
+	Point2d x1(p1.x,midY);
+	Point2d x2(p2.x,midY);
 	Mat A(6, 6, CV_64F);
 	for (int i = 0; i < 3; i++) {
 		for (int j = 0; j < 4; j++) {
