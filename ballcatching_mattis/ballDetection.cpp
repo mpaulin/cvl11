@@ -10,7 +10,7 @@
 BallDetector::BallDetector(){
   CvGaussBGStatModelParams* params = new CvGaussBGStatModelParams;		     
   params->win_size=200;	
-  params->n_gauss=5;
+  params->n_gauss=2;
   params->bg_threshold=0.7;
   params->std_threshold=2.5;
   params->minArea=15.f;
@@ -26,6 +26,9 @@ BallDetector::BallDetector(){
 #ifdef MOTION_FIRST
 
 void BallDetector::addData(const Mat& image_left,const Mat& P_left, const Mat& image_right, const Mat& P_right, long time){
+	struct timeval bchmrk;
+	gettimeofday(&bchmrk,NULL);
+	double t1 = double(bchmrk.tv_usec)/1000;
 	FGDetector_left->Process(new IplImage(image_left));
 	FGDetector_right->Process(new IplImage(image_right));
 	mask_left = cvarrToMat(FGDetector_left->GetMask());
@@ -54,6 +57,10 @@ void BallDetector::addData(const Mat& image_left,const Mat& P_left, const Mat& i
 		filterTrajectories(balls.trajectories,balls.times,balls.currentFrame);
 	}
 	frame++;
+	gettimeofday(&bchmrk,NULL);
+	double t5 = double(bchmrk.tv_usec)/1000;
+
+	cout << "Benchmarking: All : " << t5-t1 << endl;
 }
 
 #else
